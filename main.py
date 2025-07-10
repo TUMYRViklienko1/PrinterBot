@@ -1,43 +1,60 @@
-import os
-import asyncio
+import asyncio, os, logging
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-# Load environment variables
+
+os.makedirs("log", exist_ok=True)  # Creates the 'log' folder if it doesn't exist
+os.makedirs("data", exist_ok=True)  # Creates the 'data' folder if it doesn't exist
+
+
+# --- Load environment variables ---
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
+debug_level_str = os.getenv("DEBUG", "ERROR").upper()
+DEBUG_LEVEL = getattr(logging, debug_level_str, logging.ERROR)
 
-# Configure bot intents
+# --- Setup logging BEFORE defining loggers ---
+os.makedirs("log", exist_ok=True)
+logging.basicConfig(
+    level=DEBUG_LEVEL,
+    filename='log/bot.log', 
+    filemode='w',
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+)
+
+logger = logging.getLogger(__name__)
+
+# --- Configure bot intents ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-# Initialize the bot
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Event: on_ready
+# --- Events ---
 @bot.event
 async def on_ready():
     await bot.change_presence(
         status=discord.Status.do_not_disturb,
-        activity=discord.Activity(
-            type=discord.ActivityType.listening,
-            name='tessst'
-        )
+        activity=discord.Activity(type=discord.ActivityType.listening, name='tessst')
     )
-    print("The bot is ready!")
-    print("-" * 20)
+    logger.info("The bot is ready!")
+    logger.info("-" * 20)
 
-# Load all cogs from the cogs directory
+# --- Sync slash commands ---
+@bot.command(name="sync")
+async def sync(ctx):
+    synced = await bot.tree.sync()
+    logger.info(f"Synced {len(synced)} command(s).")
+
+# --- Load Cogs ---
 async def load_cogs():
-    cogs_dir = './cogs'
-    for filename in os.listdir(cogs_dir):
+    for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):
-            cog_name = filename[:-3]
-            await bot.load_extension(f'cogs.{cog_name}')
+            await bot.load_extension(f'cogs.{filename[:-3]}')
 
-# Entry point
+# --- Entry point ---
 async def main():
     async with bot:
         await load_cogs()

@@ -1,3 +1,5 @@
 config/
+data/
 venv/
+log/
 .env
