@@ -2,8 +2,17 @@ import os
 import logging
 from dotenv import load_dotenv
 
+LOG_DIR_NAME = "log" #store log data
+DATA_DIR_NAME = "data" # store data about the printeres
+
+# Creates the 'log'|| 'data' folder if it doesn't exist
+os.makedirs(LOG_DIR_NAME, exist_ok=True) 
+os.makedirs(DATA_DIR_NAME, exist_ok=True) 
+
 # Load environment variables
 load_dotenv()
+
+os.makedirs("log", exist_ok=True)
 
 # Read and validate Discord token
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -13,9 +22,6 @@ if not DISCORD_TOKEN:
 # Read debug level
 debug_level_str = os.getenv("DEBUG", "ERROR").upper()
 DEBUG_LEVEL = getattr(logging, debug_level_str, logging.ERROR)
-
-# Optional: create log directory
-os.makedirs("log", exist_ok=True)
 
 # Configure logging
 logging.basicConfig(

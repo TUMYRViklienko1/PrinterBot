@@ -7,36 +7,67 @@ import bambulabs_api as bl
 import time
 from discord import app_commands, Interaction
 import json, asyncio, pathlib
+from pathlib import Path
+import logging
 
+logger = logging.getLogger(__name__)
 
 class PrinterCog(commands.GroupCog, group_name="printer", group_description="Control 3D printers"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.printer_file = Path("data/printer.jason")
+        self.connected_printers = self.load_printers()
         self.printer = None
+        
+    def load_printers(self):
+        if not self.printer_file.exists():
+            return {}
+        with open(self.printer_file) as file_read:
+            return json.load(file_read)
+    
+    def save_printers(self):
+        with open(self.printer_file, "w") as file_write:
+            json.dump(self.connected_printers, file_write, indent=4)
+    
+    
 
     @commands.hybrid_command(name="connect", description="Connect to a 3D printer")
     async def connect(
         self,
         ctx: commands.Context,
         name: str,
-        ip: str,                               # ② add type hints (all default to str anyway)
+        ip: str,                              
         serial: str,
         access_code: str
     ):
-        print('Starting bambulabs_api example')
-        print('Connecting to BambuLab 3D printer')
-        print(f'ip: {ip}')
-        print(f'serial: {serial}')
-        print(f'Access Code: {access_code}')
 
+        logger.debug(f'ip: {ip}')
+        logger.debug(f'serial: {serial}')
+        logger.debug(f'Access Code: {access_code}')
+        
+        self.connected_printers[name] = {
+            "ip" : ip,
+            "serial" : serial,
+            "access_code" : access_code
+        }
+        self.save_printers()
         # Create a new instance of the API
         self.printer = bl.Printer(ip, access_code, serial)
 
         # Connect to the BambuLab 3D printer
+        logger.info(f"Connection to the print: {name}")
         self.printer.connect()
-        self.status = self.printer.get_state()
-        print(f'Printer status: {self.status}')
+
+        for _ in range(10):  # max 10 attempts (~3s)
+            status = self.printer.get_state()
+            if status != "UNKNOWN":
+                break
+            time.sleep(0.3)
+
+        logger.info(f'Printer status: {self.status}')
          
+        self.printer.disconnect()
+
     @commands.hybrid_command(name="status", description="Status of the printer")
     async def status(
         self,
@@ -63,7 +94,6 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         
 
 
-# discord‑py ≥ 2.0 expects an *async* setup function
 async def setup(bot):
     await bot.add_cog(PrinterCog(bot))
 
