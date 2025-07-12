@@ -11,6 +11,8 @@ from pathlib import Path
 import logging
 import ipaddress
 
+
+
 logger = logging.getLogger(__name__)
 
 class PrinterCog(commands.GroupCog, group_name="printer", group_description="Control 3D printers"):
@@ -30,26 +32,15 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         with open(self.printer_file, "w") as file_write:
             json.dump(self.connected_printers, file_write, indent=4)
     
-    
-
-    @commands.hybrid_command(name="connect", description="Connect to a 3D printer")
-    async def connect(self, ctx: commands.Context, name: str, ip: str, serial: str, access_code: str):
-        await ctx.defer()
-
-        # Validate IP address early
+    async def validate_ip(self, ctx: commands.Context, ip:str):
         try:
             ipaddress.ip_address(ip)
         except ValueError:
             await ctx.send(f"❌ Invalid IP address: `{ip}`.")
             return
 
-        logger.info(f"Attempting connection to printer: {name}")
-        self.connected_printers[name] = {
-            "ip": ip,
-            "serial": serial,
-            "access_code": access_code
-        }
 
+    async def connect_to_printer(self,ctx: commands.Context , name: str, ip: str, serial: str, access_code: str) -> (bl.Printer):
         try:
             printer = bl.Printer(ip, access_code, serial)
             printer.connect()
@@ -61,7 +52,7 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
             else:
                 logger.error("Failed to connect to printer via MQTT.")
                 await ctx.send(f"❌ Could not connect to `{name}` via MQTT.")
-                return
+                return None
 
             for _ in range(10):
                 status = printer.get_state()
@@ -70,16 +61,34 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
                 time.sleep(0.3)
             else:
                 await ctx.send(f"⚠️ Connected to `{name}`, but status is UNKNOWN.")
-                return
+                return None
             
             self.save_printers()
             await ctx.send(f"✅ Connected to `{name}` with status `{status}`.")
+            return printer
+        
         except Exception as e:
             logger.exception("Unhandled exception during connect")
             await ctx.send(f"❌ Error occurred: `{str(e)}`")
-        finally:
-            if printer:
-                printer.disconnect()
+        
+
+    @commands.hybrid_command(name="connect", description="Connect to a 3D printer")
+    async def connect(self, ctx: commands.Context, name: str, ip: str, serial: str, access_code: str):
+        await ctx.defer()
+
+        await self.validate_ip(ctx,ip)
+
+        logger.info(f"Attempting connection to printer: {name}")
+
+        self.connected_printers[name] = {
+            "ip": ip,
+            "serial": serial,
+            "access_code": access_code
+        }
+
+        printer = await self.connect_to_printer(ctx, name=name, ip=ip, serial=serial, access_code=access_code)
+        if printer:
+            printer.disconnect()
 
     @commands.hybrid_command(name="status", description="Status of the printer")
     async def status(
