@@ -56,8 +56,11 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
 
         # Connect to the BambuLab 3D printer
         logger.info(f"Connection to the print: {name}")
-        self.printer.connect()
-
+        
+        if self.printer.connect() is False:
+            logger.error("MQTT error")
+            return
+        
         for _ in range(10):  # max 10 attempts (~3s)
             status = self.printer.get_state()
             if status != "UNKNOWN":
