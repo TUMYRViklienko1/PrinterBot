@@ -11,6 +11,7 @@ from pathlib import Path
 import logging
 import ipaddress
 
+from discord import app_commands
 
 
 logger = logging.getLogger(__name__)
@@ -20,8 +21,8 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         self.bot = bot
         self.printer_file = Path("data/printer.jason")
         self.connected_printers = self.load_printers()
-        self.printer = None
-        
+        self.printer = None 
+
     def load_printers(self):
         if not self.printer_file.exists():
             return {}
@@ -63,7 +64,7 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
                 await ctx.send(f"⚠️ Connected to `{name}`, but status is UNKNOWN.")
                 return None
             
-            self.save_printers()
+            
             await ctx.send(f"✅ Connected to `{name}` with status `{status}`.")
             return printer
         
@@ -74,9 +75,11 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
 
     @commands.hybrid_command(name="connect", description="Connect to a 3D printer")
     async def connect(self, ctx: commands.Context, name: str, ip: str, serial: str, access_code: str):
-        await ctx.defer()
+        await ctx.defer(ephemeral=True)
 
-        await self.validate_ip(ctx,ip)
+        # Continue as usual...
+        if not await self.validate_ip(ctx, ip):
+            return
 
         logger.info(f"Attempting connection to printer: {name}")
 
@@ -88,7 +91,18 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
 
         printer = await self.connect_to_printer(ctx, name=name, ip=ip, serial=serial, access_code=access_code)
         if printer:
+            self.save_printers()
             printer.disconnect()
+
+    @commands.hybrid_command(name="defer", description="A deferred slash command response")
+    async def defer(self, ctx: commands.Context):
+        # Defer the response (ephemeral initial acknowledgment)
+        await ctx.defer(ephemeral=True)
+        # ... perform any long-running tasks here ...
+        await asyncio.sleep(4)
+        # Send the follow-up message (will be ephemeral to the user who invoked)
+        await ctx.send("This message was deferred!", ephemeral=True)
+
 
     @commands.hybrid_command(name="status", description="Status of the printer")
     async def status(
