@@ -52,15 +52,22 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         }
         self.save_printers()
         # Create a new instance of the API
-        self.printer = bl.Printer(ip, access_code, serial)
+        # Create printer object
+        printer = bl.Printer(ip, access_code, serial)
+        logger.info(f"Attempting connection to printer: {name}")
+        printer.connect()
 
-        # Connect to the BambuLab 3D printer
-        logger.info(f"Connection to the print: {name}")
-        
-        if self.printer.connect() is False:
-            logger.error("MQTT error")
+        # Wait for MQTT connection
+        for attempt in range(10):
+            if printer.mqtt_client.is_connected():
+                logger.info("MQTT connection successful.")
+                break
+            time.sleep(0.3)
+        else:
+            logger.error("Failed to connect to printer via MQTT.")
+            await ctx.send(f"❌ Failed to connect to printer `{name}` via MQTT.")
             return
-        
+
         for _ in range(10):  # max 10 attempts (~3s)
             status = self.printer.get_state()
             if status != "UNKNOWN":
