@@ -9,6 +9,7 @@ from discord import app_commands, Interaction
 import json, asyncio, pathlib
 from pathlib import Path
 import logging
+import ipaddress
 
 logger = logging.getLogger(__name__)
 
@@ -32,51 +33,53 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
     
 
     @commands.hybrid_command(name="connect", description="Connect to a 3D printer")
-    async def connect(
-        self,
-        ctx: commands.Context,
-        name: str,
-        ip: str,                              
-        serial: str,
-        access_code: str
-    ):
+    async def connect(self, ctx: commands.Context, name: str, ip: str, serial: str, access_code: str):
+        await ctx.defer()
 
-        logger.debug(f'ip: {ip}')
-        logger.debug(f'serial: {serial}')
-        logger.debug(f'Access Code: {access_code}')
-        
-        self.connected_printers[name] = {
-            "ip" : ip,
-            "serial" : serial,
-            "access_code" : access_code
-        }
-        self.save_printers()
-        # Create a new instance of the API
-        # Create printer object
-        printer = bl.Printer(ip, access_code, serial)
-        logger.info(f"Attempting connection to printer: {name}")
-        printer.connect()
-
-        # Wait for MQTT connection
-        for attempt in range(10):
-            if printer.mqtt_client.is_connected():
-                logger.info("MQTT connection successful.")
-                break
-            time.sleep(0.3)
-        else:
-            logger.error("Failed to connect to printer via MQTT.")
-            await ctx.send(f"❌ Failed to connect to printer `{name}` via MQTT.")
+        # Validate IP address early
+        try:
+            ipaddress.ip_address(ip)
+        except ValueError:
+            await ctx.send(f"❌ Invalid IP address: `{ip}`.")
             return
 
-        for _ in range(10):  # max 10 attempts (~3s)
-            status = self.printer.get_state()
-            if status != "UNKNOWN":
-                break
-            time.sleep(0.3)
+        logger.info(f"Attempting connection to printer: {name}")
+        self.connected_printers[name] = {
+            "ip": ip,
+            "serial": serial,
+            "access_code": access_code
+        }
 
-        logger.info(f'Printer status: {self.status}')
-         
-        self.printer.disconnect()
+        try:
+            printer = bl.Printer(ip, access_code, serial)
+            printer.connect()
+
+            for _ in range(10):
+                if printer.mqtt_client.is_connected():
+                    break
+                time.sleep(0.3)
+            else:
+                logger.error("Failed to connect to printer via MQTT.")
+                await ctx.send(f"❌ Could not connect to `{name}` via MQTT.")
+                return
+
+            for _ in range(10):
+                status = printer.get_state()
+                if status != "UNKNOWN":
+                    break
+                time.sleep(0.3)
+            else:
+                await ctx.send(f"⚠️ Connected to `{name}`, but status is UNKNOWN.")
+                return
+            
+            self.save_printers()
+            await ctx.send(f"✅ Connected to `{name}` with status `{status}`.")
+        except Exception as e:
+            logger.exception("Unhandled exception during connect")
+            await ctx.send(f"❌ Error occurred: `{str(e)}`")
+        finally:
+            if printer:
+                printer.disconnect()
 
     @commands.hybrid_command(name="status", description="Status of the printer")
     async def status(
