@@ -21,7 +21,11 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.bot = bot
         self.printer_file = Path("data/printer.jason")
         self.connected_printers = self.load_printers()
+        self.bot.connected_printers = self.connected_printers
         self.printer = None 
+
+    def get_connected_printers(self) -> (dict):
+        return self.connected_printers
 
     def load_printers(self):
         if not self.printer_file.exists():
@@ -99,31 +103,6 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             self.save_printers()
             printer.disconnect()
 
-
-    # @commands.hybrid_command(name="status", description="Status of the printer")
-    # async def status(
-    #     self,
-    #     ctx: commands.Context,
-    #     name: str
-    # ):
-    #     bed_temperature = self.printer.get_bed_temperature()
-    #     chamber_temperature = self.printer.get_chamber_temperature()
-    #     nozzle_temperature = self.printer.get_nozzle_temperature()
-
-
-    #     embed = discord.Embed(  title=f"Name of the printer: {name}",
-    #                             url="https://google.com",
-    #                             description="This is your printer", 
-    #                             color=0x7309de)
-    #     embed.set_author(name=ctx.author.display_name, url="", icon_url=ctx.message.author.avatar.url)
-    #     embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
-    #     embed.add_field(name="Full temperature", value=f"The bed temperature: {bed_temperature}", inline=True)
-    #     embed.add_field(name="Full temperature", value=f"The bed temperature: {chamber_temperature}", inline=True)
-    #     embed.add_field(name="Full temperature", value=f"The bed temperature: {nozzle_temperature}", inline=True)
-
-    #     embed.set_footer(text="Thank you for reading")
-    #     await ctx.send(embed=embed)
-        
 
 
 async def setup(bot):
