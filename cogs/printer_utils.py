@@ -101,8 +101,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         if printer:
             self.save_printers()
             printer.disconnect()
-
-
+            
 
 async def setup(bot):
     await bot.add_cog(PrinterUtils(bot))
