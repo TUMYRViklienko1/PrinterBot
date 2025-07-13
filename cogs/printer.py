@@ -33,12 +33,12 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         with open(self.printer_file, "w") as file_write:
             json.dump(self.connected_printers, file_write, indent=4)
     
-    async def validate_ip(self, ctx: commands.Context, ip:str):
+    async def validate_ip(self, ctx: commands.Context, ip:str) -> (bool):
         try:
             ipaddress.ip_address(ip)
         except ValueError:
             await ctx.send(f"❌ Invalid IP address: `{ip}`.")
-            return
+            return False
 
 
     async def connect_to_printer(self,ctx: commands.Context , name: str, ip: str, serial: str, access_code: str) -> (bl.Printer):
@@ -49,7 +49,7 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
             for _ in range(10):
                 if printer.mqtt_client.is_connected():
                     break
-                time.sleep(0.3)
+                await asyncio.sleep(0.3)
             else:
                 logger.error("Failed to connect to printer via MQTT.")
                 await ctx.send(f"❌ Could not connect to `{name}` via MQTT.")
@@ -59,7 +59,7 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
                 status = printer.get_state()
                 if status != "UNKNOWN":
                     break
-                time.sleep(0.3)
+                await asyncio.sleep(0.3)
             else:
                 await ctx.send(f"⚠️ Connected to `{name}`, but status is UNKNOWN.")
                 return None
@@ -78,7 +78,8 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         await ctx.defer(ephemeral=True)
 
         # Continue as usual...
-        if not await self.validate_ip(ctx, ip):
+        if await self.validate_ip(ctx, ip) == False:
+            logger.warning(f"❌ Invalid IP address: `{ip}`.")
             return
 
         logger.info(f"Attempting connection to printer: {name}")
