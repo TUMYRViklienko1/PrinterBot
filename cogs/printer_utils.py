@@ -16,7 +16,7 @@ from discord import app_commands
 
 logger = logging.getLogger(__name__)
 
-class PrinterCog(commands.GroupCog, group_name="printer", group_description="Control 3D printers"):
+class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_description="Control 3D printers"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.printer_file = Path("data/printer.jason")
@@ -127,5 +127,5 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
 
 
 async def setup(bot):
-    await bot.add_cog(PrinterCog(bot))
+    await bot.add_cog(PrinterUtils(bot))
 
