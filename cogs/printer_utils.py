@@ -97,7 +97,6 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             "serial": serial,
             "access_code": access_code
         }
-
         printer = await self.connect_to_printer(ctx, name=name, ip=ip, serial=serial, access_code=access_code)
         if printer:
             self.save_printers()

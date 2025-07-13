@@ -17,7 +17,7 @@ class Menu(discord.ui.Select):
             for printer_name in printer_utils_cog.connected_printers.keys():
                 printer_option = discord.SelectOption(label = printer_name)
                 options.append(printer_option)
-
+            
             super().__init__(placeholder="Please select a printer:", min_values= 1, max_values= 1, options = options)
 
         async def callback(self, interaction: discord.Interaction):
@@ -31,8 +31,8 @@ class MenuView(discord.ui.View):
 class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Display info about your 3D Printer"):
     def __init__(self, bot):
         self.bot = bot     
-    async def status_show(name_of_printer: str):
-        pass
+    async def status_show(self, ctx: commands.Context, name_of_printer: str):
+        await ctx.send(f"name_of_printer")
 
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
