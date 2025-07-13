@@ -53,6 +53,10 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
             else:
                 logger.error("Failed to connect to printer via MQTT.")
                 await ctx.send(f"❌ Could not connect to `{name}` via MQTT.")
+                #printer.mqtt_stop()
+                printer.camera_client.stop()
+                printer.mqtt_stop()
+                #stop connection
                 return None
 
             for _ in range(10):
@@ -94,15 +98,6 @@ class PrinterCog(commands.GroupCog, group_name="printer", group_description="Con
         if printer:
             self.save_printers()
             printer.disconnect()
-
-    @commands.hybrid_command(name="defer", description="A deferred slash command response")
-    async def defer(self, ctx: commands.Context):
-        # Defer the response (ephemeral initial acknowledgment)
-        await ctx.defer(ephemeral=True)
-        # ... perform any long-running tasks here ...
-        await asyncio.sleep(4)
-        # Send the follow-up message (will be ephemeral to the user who invoked)
-        await ctx.send("This message was deferred!", ephemeral=True)
 
 
     @commands.hybrid_command(name="status", description="Status of the printer")
