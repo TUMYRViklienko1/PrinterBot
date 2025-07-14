@@ -8,9 +8,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Menu(discord.ui.Select):
-    def __init__(self, printer_utils_cog, parent_cog, ctx):
+    def __init__(self, ctx, printer_utils_cog, parent_cog, callback_status: int):
         self.parent_cog = parent_cog
         self.ctx = ctx
+        self.callback_status = callback_status
+        self.printer_utils_cog = printer_utils_cog
 
         options = [
             discord.SelectOption(label=printer_name)
@@ -31,14 +33,24 @@ class Menu(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "none":
             await interaction.response.send_message("No printers are currently connected.", ephemeral=True)
-        else:
-            await self.parent_cog.status_show(self.ctx, self.values[0])
+            return
+         
+        await interaction.response.defer(ephemeral=True)
 
+        if self.callback_status == 0:
+            await self.parent_cog.status_show_callback(self.ctx, self.values[0])
+        elif self.callback_status == 1:
+            await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
 
 class MenuView(discord.ui.View):
-    def __init__(self, printer_utils_cog, parent_cog, ctx):
+    def __init__(self, printer_utils_cog, parent_cog, ctx, callback_status: int):
         super().__init__()
-        self.add_item(Menu(printer_utils_cog, parent_cog, ctx))
+        self.add_item(Menu(
+            ctx=ctx,
+            printer_utils_cog=printer_utils_cog,
+            parent_cog=parent_cog,
+            callback_status=callback_status
+        ))
 
 
 class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Display info about your 3D Printer"):
@@ -52,17 +64,43 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             return
         return printer_utils_cog
 
-    async def status_show(self, ctx: commands.Context, name_of_printer: str):
+    async def check_printer_list(self, ctx: commands.Context, printer_utils_cog):
+        if not printer_utils_cog.connected_printers:
+
+            embed = discord.Embed(title="❌ No Printers in the list",
+                                description="To add the printer use /connect", 
+                                color=0x7309de)
+            await ctx.send(embed=embed)
+
+            return 
+
+    async def status_show_callback(self, ctx: commands.Context, name_of_printer: str):
         await ctx.send(f"Status for printer: {name_of_printer}")
+
+    async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):
+        printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
+
+
+        if printer_info is None:
+            # Handle the case where the printer doesn't exist
+            print(f"❌ Printer '{name_of_printer}' not found.")
+            return
+
+        ip_printer = printer_info["ip"]
+        serial_printer = printer_info["serial"]
+        access_code_printer = printer_info["access_code"]
+
+        await printer_utils_cog.connect_to_printer(   ctx = ctx, name = name_of_printer,
+                                                ip = ip_printer, serial = serial_printer, access_code  = access_code_printer)
+
 
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
         printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
-
         await ctx.send(
-            "📋 Select a printer option:",
-            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx)
+            "📋 Select the printer option:",
+            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx , callback_status = 0)
         )
 
     @commands.hybrid_command(name="list", description="Display list of the printer")
@@ -82,6 +120,17 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         )
 
         await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="check_connection", description="Check connection of the 3D printer")
+    async def check_connection(self, ctx: commands.Context):
+        name_of_cog = "PrinterUtils"
+        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+        
+        await self.check_printer_list(ctx = ctx, printer_utils_cog= printer_utils_cog)
+        await ctx.send(
+            "📋 Select the printer option:",
+            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx,  callback_status = 1)
+        )
 
 # discord​‐py ≥ 2.0 expects an *async* setup function
 async def setup(bot):

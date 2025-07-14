@@ -79,6 +79,8 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             
             
             await ctx.send(f"✅ Connected to `{name}` with status `{status}`.")
+            self.light_printer_check(ctx = ctx, printer = printer)
+            
             return printer
         
         except Exception as e:
@@ -106,7 +108,6 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         if printer:
             self.save_printers()
             
-            self.light_printer_check(ctx = ctx, printer = printer)
             printer.disconnect()
 
 async def setup(bot):
