@@ -65,6 +65,23 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx)
         )
 
+    @commands.hybrid_command(name="list", description="Display list of the printer")
+    async def list_all_printers(self, ctx: commands.Context):
+        name_of_cog = "PrinterUtils"
+        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+
+        if not printer_utils_cog.connected_printers:
+            await ctx.send("No Printers in the list")
+            return 
+        
+        description = "\n".join(f"• {name}" for name in printer_utils_cog.connected_printers)
+        embed = discord.Embed(
+            title="🖨️ Connected Printers",
+            description=description,
+            color=discord.Color.blue()
+        )
+
+        await ctx.send(embed=embed)
 
 # discord​‐py ≥ 2.0 expects an *async* setup function
 async def setup(bot):
