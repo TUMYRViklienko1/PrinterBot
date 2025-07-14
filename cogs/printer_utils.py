@@ -45,7 +45,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             return False
 
     async def light_printer_check(self, ctx: commands.Context, printer:bl.Printer):
-        ctx.send("Connection check. Check the light status of your printer 💡")
+        await ctx.send("Connection check. Check the light status of your printer 💡")
         printer.turn_light_on()
         await asyncio.sleep(1)
         printer.turn_light_off()
@@ -79,8 +79,8 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             
             
             await ctx.send(f"✅ Connected to `{name}` with status `{status}`.")
-            self.light_printer_check(ctx = ctx, printer = printer)
-            
+            await self.light_printer_check(ctx = ctx, printer = printer)
+
             return printer
         
         except Exception as e:
