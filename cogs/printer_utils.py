@@ -44,6 +44,11 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             await ctx.send(f"❌ Invalid IP address: `{ip}`.")
             return False
 
+    async def light_printer_check(self, ctx: commands.Context, printer:bl.Printer):
+        ctx.send("Connection check. Check the light status of your printer 💡")
+        printer.turn_light_on()
+        await asyncio.sleep(1)
+        printer.turn_light_off()
 
     async def connect_to_printer(self,ctx: commands.Context , name: str, ip: str, serial: str, access_code: str) -> (bl.Printer):
         try:
@@ -81,7 +86,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             await ctx.send(f"❌ Error occurred: `{str(e)}`")
         
 
-    @commands.hybrid_command(name="connect", description="Connect to a 3D printer")
+    @commands.hybrid_command(name="connect", description="Connect to a 3D Printer")
     async def connect(self, ctx: commands.Context, name: str, ip: str, serial: str, access_code: str):
         await ctx.defer(ephemeral=True)
 
@@ -100,8 +105,9 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         printer = await self.connect_to_printer(ctx, name=name, ip=ip, serial=serial, access_code=access_code)
         if printer:
             self.save_printers()
-            printer.disconnect()
             
+            self.light_printer_check(ctx = ctx, printer = printer)
+            printer.disconnect()
 
 async def setup(bot):
     await bot.add_cog(PrinterUtils(bot))
