@@ -45,21 +45,43 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     def __init__(self, bot):
         self.bot = bot
 
+    async def get_cog(self, ctx: commands.Context, name_of_cog: str):
+        printer_utils_cog = self.bot.get_cog(name_of_cog)
+        if not printer_utils_cog:
+            await ctx.send("❌ Printer utilities not loaded.")
+            return
+        return printer_utils_cog
+
     async def status_show(self, ctx: commands.Context, name_of_printer: str):
         await ctx.send(f"Status for printer: {name_of_printer}")
 
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
-        printer_utils_cog = self.bot.get_cog("PrinterUtils")
-        if not printer_utils_cog:
-            await ctx.send("❌ Printer utilities not loaded.")
-            return
+        name_of_cog = "PrinterUtils"
+        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
 
         await ctx.send(
             "📋 Select a printer option:",
             view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx)
         )
 
+    @commands.hybrid_command(name="list", description="Display list of the printer")
+    async def list_all_printers(self, ctx: commands.Context):
+        name_of_cog = "PrinterUtils"
+        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+
+        if not printer_utils_cog.connected_printers:
+            await ctx.send("No Printers in the list")
+            return 
+        
+        description = "\n".join(f"• {name}" for name in printer_utils_cog.connected_printers)
+        embed = discord.Embed(
+            title="🖨️ Connected Printers",
+            description=description,
+            color=discord.Color.blue()
+        )
+
+        await ctx.send(embed=embed)
 
 # discord​‐py ≥ 2.0 expects an *async* setup function
 async def setup(bot):
