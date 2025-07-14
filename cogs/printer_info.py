@@ -38,7 +38,7 @@ class Menu(discord.ui.Select):
         await interaction.response.defer(ephemeral=True)
 
         if self.callback_status == 0:
-            await self.parent_cog.status_show_callback(self.ctx, self.values[0])
+            await self.parent_cog.status_show_callback(self.ctx, self.values[0], self.printer_utils_cog)
         elif self.callback_status == 1:
             await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
 
@@ -73,13 +73,8 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             await ctx.send(embed=embed)
 
             return 
-
-    async def status_show_callback(self, ctx: commands.Context, name_of_printer: str):
-        await ctx.send(f"Status for printer: {name_of_printer}")
-
-    async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):
+    async def get_printer_data(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
         printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
-
 
         if printer_info is None:
             # Handle the case where the printer doesn't exist
@@ -90,8 +85,42 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         serial_printer = printer_info["serial"]
         access_code_printer = printer_info["access_code"]
 
+        return ip_printer, serial_printer, access_code_printer
+    
+    async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
+        await ctx.send(f"Status for printer: {name_of_printer}")
+
+        ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
+                                        ctx = ctx,
+                                        name_of_printer = name_of_printer,
+                                        printer_utils_cog = printer_utils_cog
+                                        )
+
         await printer_utils_cog.connect_to_printer(   ctx = ctx, name = name_of_printer,
                                                 ip = ip_printer, serial = serial_printer, access_code  = access_code_printer)
+
+        embed = discord.Embed(  title= f"Name {name_of_printer}:",
+                                description="hmmmm 2D girl", 
+                                color=0x7309de)
+        embed.set_author(name=ctx.author.display_name, url="", icon_url=ctx.message.author.avatar.url)
+        embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
+        embed.add_field(name="Field 1", value="bla bla bla", inline=True)
+        embed.add_field(name="Field 2", value="bla bla bla", inline=True)
+        embed.set_footer(text="Thank you for reading")
+        await ctx.send(embed=embed)
+
+
+    async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog) -> (bool):
+        ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
+                                        ctx = ctx,
+                                        name_of_printer = name_of_printer,
+                                        printer_utils_cog = printer_utils_cog
+                                        )
+
+        return await printer_utils_cog.connect_to_printer(  ctx = ctx, name = name_of_printer,
+                                                            ip = ip_printer, serial = serial_printer, 
+                                                            access_code  = access_code_printer
+                                                            )
 
 
     @commands.hybrid_command(name="status", description="Display status of the printer")
