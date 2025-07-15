@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 import logging
 import time
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +98,13 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             return f"Printer Error Code: {printer_error_code}"
 
 
+    async def finish_time_format(remaining_time):
+        if remaining_time is not None:
+            finish_time = datetime.datetime.now() + datetime.timedelta(
+                minutes=int(remaining_time))
+            return finish_time.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            return "NA"
 
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
 
@@ -109,7 +117,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             name="Print Time",
             value=(
                 f"`Current:` {printer_object.get_time()}\n"
-                f"`Estimated:` {printer_object.get_remaining_time()}\n"
+                f"`Finish:`  {await self.finish_time_format(printer_object.get_time())}\n"
             ),
             inline=True
         )
