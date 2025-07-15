@@ -110,7 +110,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         printer_image.save("camera_frame.png")
 
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
-        self.get_camera_frame()
+        await self.get_camera_frame(printer_object=printer_object)
         image_main_location = discord.File("img/camera_frame.png", filename="camera_frame.png")
 
         embed = discord.Embed(title=f"Name: {name_of_printer}", description = "Status of the printer:", color=0x7309de)
