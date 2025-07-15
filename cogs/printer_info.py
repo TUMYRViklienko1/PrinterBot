@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,15 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
         return ip_printer, serial_printer, access_code_printer
     
+    async def printer_error_handler(self, printer_object):
+        printer_error_code = printer_object.print_error_code()
+        if printer_error_code is 0:
+            return "No errors."
+        else:
+            return f"Printer Error Code: {printer_error_code}"
+
+
+
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
 
         embed = discord.Embed(title=f"Name: {name_of_printer}", description = "Status of the printer:", color=0x7309de)
@@ -96,18 +106,10 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
                              icon_url=ctx.message.author.avatar.url)
         embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
         embed.add_field(
-            name="Stage:",
-            value="\u200b",  # Zero-width space to force layout
-            inline=False
-        )
-
-        embed.add_field(
             name="Print Time",
             value=(
-                f"```"
-                f"Current:   {printer_object.get_time()}\n"
-                f"Estimated: {printer_object.mqtt_client.get_remaining_time()}\n"
-                f"```"
+                f"`Current:` {printer_object.get_time()}\n"
+                f"`Estimated:` {printer_object.get_remaining_time()}\n"
             ),
             inline=True
         )
@@ -115,11 +117,9 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         embed.add_field(
             name="Progress",
             value=(
-                f"```"
-                f"Percent: {printer_object.get_percentage()}%\n"
-                f"Layer:   {printer_object.current_layer_num()}/{printer_object.total_layer_num()}\n"
-                f"Speed:   {printer_object.get_print_speed()} (100%)\n"
-                f"```"
+                f"`Percent:` {printer_object.get_percentage()}%\n"
+                f"`Layer:`   {printer_object.current_layer_num()}/{printer_object.total_layer_num()}\n"
+                f"`Speed:`   {printer_object.get_print_speed()} (100%)\n"
             ),
             inline=True
         )
@@ -127,9 +127,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         embed.add_field(
             name="Lights",
             value=(
-                f"```"
-                f"Chamber: {printer_object.get_light_state()}\n"
-                f"```"
+                f"`Chamber:` {printer_object.get_light_state()}\n"
             ),
             inline=True
         )
@@ -137,11 +135,9 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         embed.add_field(
             name="Temps",
             value=(
-                f"```"
-                f"Bed:     {printer_object.get_bed_temperature()}°C/{printer_object.get_target_bed_temperature()}°C\n"
-                f"Nozzle:  {printer_object.get_nozzle_temperature()}°C/{printer_object.get_target_nozzle_temperature()}°C\n"
-                f"Chamber: {printer_object.get_chamber_temperature()}°C\n"
-                f"```"
+                f"`Bed:`     {printer_object.get_bed_temperature()}°C\n"
+                f"`Nozzle:`  {printer_object.get_nozzle_temperature()}°C\n"
+                f"`Chamber:` {printer_object.get_chamber_temperature()}°C\n"
             ),
             inline=True
         )
@@ -149,14 +145,20 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         embed.add_field(
             name="Fans",
             value=(
-                f"```"
-                f"Main 1:    {printer_object.mqtt_client.get_part_fan_speed()}%\n"
-                f"Main 2:    {printer_object.mqtt_client.get_aux_fan_speed()}%\n"
-                f"Cooling:   {printer_object.mqtt_client.get_chamber_fan_speed()}%\n"
-                f"```"
+                f"`Main 1:`   {printer_object.mqtt_client.get_part_fan_speed()}%\n"
+                f"`Main 2:`   {printer_object.mqtt_client.get_aux_fan_speed()}%\n"
+                f"`Cooling:`  {printer_object.mqtt_client.get_chamber_fan_speed()}%\n"
             ),
             inline=True
         )
+
+        embed.add_field(
+            name="Errors",
+            value=f"`Error:` {await self.printer_error_handler(printer_object=printer_object)}",
+            inline=False
+        )
+
+        
 
         await ctx.send(embed=embed)
 
