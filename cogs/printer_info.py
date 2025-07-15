@@ -107,7 +107,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             return "NA"
     async def get_camera_frame(self, printer_object):
         printer_image = printer_object.get_camera_image()
-        printer_image.save("camera_frame.png")
+        printer_image.save("img/camera_frame.png")
 
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
         await self.get_camera_frame(printer_object=printer_object)
