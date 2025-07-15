@@ -70,6 +70,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             embed = discord.Embed(title="❌ No Printers in the list",
                                 description="To add the printer use /connect", 
                                 color=0x7309de)
+            
             await ctx.send(embed=embed)
 
             return 
@@ -87,6 +88,78 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
         return ip_printer, serial_printer, access_code_printer
     
+    async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
+
+        embed = discord.Embed(title=f"Name: {name_of_printer}", description = "Status of the printer:", color=0x7309de)
+        embed.set_author(name=ctx.author.display_name,
+                             url = "",
+                             icon_url=ctx.message.author.avatar.url)
+        embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
+        embed.add_field(
+            name="Stage:",
+            value="\u200b",  # Zero-width space to force layout
+            inline=False
+        )
+
+        embed.add_field(
+            name="Print Time",
+            value=(
+                f"```"
+                f"Current:   {printer_object.get_time()}\n"
+                f"Estimated: {printer_object.mqtt_client.get_remaining_time()}\n"
+                f"```"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="Progress",
+            value=(
+                f"```"
+                f"Percent: {printer_object.get_percentage()}%\n"
+                f"Layer:   {printer_object.get_layer()}/{printer_object.total_layer_num()}\n"
+                f"Speed:   {printer_object.get_print_speed()} (100%)\n"
+                f"```"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="Lights",
+            value=(
+                f"```"
+                f"Chamber: {printer_object.get_light_state()}\n"
+                f"```"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="Temps",
+            value=(
+                f"```"
+                f"Bed:     {printer_object.get_bed_temperature()}°C/{printer_object.get_target_bed_temperature()}°C\n"
+                f"Nozzle:  {printer_object.get_nozzle_temperature()}°C/{printer_object.get_target_nozzle_temperature()}°C\n"
+                f"Chamber: {printer_object.get_chamber_temperature()}°C\n"
+                f"```"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="Fans",
+            value=(
+                f"```"
+                f"Main 1:    {printer_object.mqtt_client.get_part_fan_speed()}%\n"
+                f"Main 2:    {printer_object.mqtt_client.get_aux_fan_speed()}%\n"
+                f"Cooling:   {printer_object.mqtt_client.get_chamber_fan_speed()}%\n"
+                f"```"
+            ),
+            inline=True
+        )
+
+        await ctx.send(embed=embed)
+
     async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
         await ctx.send(f"Status for printer: {name_of_printer}")
 
@@ -96,18 +169,17 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
                                         printer_utils_cog = printer_utils_cog
                                         )
 
-        await printer_utils_cog.connect_to_printer(   ctx = ctx, name = name_of_printer,
-                                                ip = ip_printer, serial = serial_printer, access_code  = access_code_printer)
+        printer_object = await printer_utils_cog.connect_to_printer( ctx = ctx, 
+                                                    name = name_of_printer,
+                                                    ip = ip_printer,   
+                                                    serial = serial_printer, 
+                                                    access_code  = access_code_printer)
+        
+        if printer_object is None:
+            return
+        
+        await self.embed_printer_info(ctx=ctx, printer_object=printer_object, name_of_printer=name_of_printer)
 
-        embed = discord.Embed(  title= f"Name {name_of_printer}:",
-                                description="hmmmm 2D girl", 
-                                color=0x7309de)
-        embed.set_author(name=ctx.author.display_name, url="", icon_url=ctx.message.author.avatar.url)
-        embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
-        embed.add_field(name="Field 1", value="bla bla bla", inline=True)
-        embed.add_field(name="Field 2", value="bla bla bla", inline=True)
-        embed.set_footer(text="Thank you for reading")
-        await ctx.send(embed=embed)
 
 
     async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog) -> (bool):
