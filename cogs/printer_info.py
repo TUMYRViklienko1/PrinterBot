@@ -117,7 +117,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             value=(
                 f"```"
                 f"Percent: {printer_object.get_percentage()}%\n"
-                f"Layer:   {printer_object.get_layer()}/{printer_object.total_layer_num()}\n"
+                f"Layer:   {printer_object.current_layer_num()}/{printer_object.total_layer_num()}\n"
                 f"Speed:   {printer_object.get_print_speed()} (100%)\n"
                 f"```"
             ),
