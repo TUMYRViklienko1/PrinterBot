@@ -92,7 +92,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     
     async def printer_error_handler(self, printer_object):
         printer_error_code = printer_object.print_error_code()
-        if printer_error_code is 0:
+        if printer_error_code == 0:
             return "No errors."
         else:
             return f"Printer Error Code: {printer_error_code}"
@@ -105,8 +105,13 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             return finish_time.strftime("%Y-%m-%d %H:%M:%S")
         else:
             return "NA"
+    async def get_camera_frame(self, printer_object):
+        printer_image = printer_object.get_camera_image()
+        printer_image.save("camera_frame.png")
 
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
+        self.get_camera_frame()
+        image_main_location = discord.File("img/camera_frame.png", filename="camera_frame.png")
 
         embed = discord.Embed(title=f"Name: {name_of_printer}", description = "Status of the printer:", color=0x7309de)
         embed.set_author(name=ctx.author.display_name,
@@ -166,9 +171,15 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             inline=False
         )
 
+        embed.add_field(
+            name="",
+            value=f"{await self.printer_error_handler(printer_object=printer_object)}",
+            inline=False
+        )
         
+        embed.set_image(url="attachment://camera_frame.png")
 
-        await ctx.send(embed=embed)
+        await ctx.send(file = image_main_location ,embed=embed)
 
     async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
         await ctx.send(f"Status for printer: {name_of_printer}")

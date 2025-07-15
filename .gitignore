@@ -2,6 +2,6 @@ data/
 venv/
 log/
 .env
-
+img/
 **/__pycache__/
 cogs/__pycache__
