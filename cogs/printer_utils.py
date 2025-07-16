@@ -9,10 +9,15 @@ from pathlib import Path
 import logging
 import ipaddress
 from discord.ext import commands, tasks
+import os
 
 from typing import Optional
 
+import printer_info
+
 logger = logging.getLogger(__name__)
+CHANEL_ID = os.getenv("CHANEL_ID")
+
 
 class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_description="Control 3D printers"):
     def __init__(self, bot: commands.Bot):
@@ -36,6 +41,13 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         with open(self.printer_file, "w") as file_write:
             json.dump(self.connected_printers, file_write, indent=4)
     
+    async def get_cog(self, name_of_cog: str):
+        printer_utils_cog = self.bot.get_cog(name_of_cog)
+        if not printer_utils_cog:
+            logger.error("cog not loaded")
+            return
+        return printer_utils_cog
+
     async def validate_ip(self, ctx: commands.Context, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
@@ -133,9 +145,34 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
     @tasks.loop(seconds = 5)
     async def monitor_printers(self):
-        channel = self.bot.get_channel(1391080605122297916)
+        name_of_the_cog = "PrinterInfo"
+        printer_info_cog = await self.get_cog(name_of_the_cog)
+
+        channel = self.bot.get_channel(CHANEL_ID)
         if channel:
-            await channel.send(f"🟢 Print started on")
+            for name_of_printer in self.connected_printers:
+                ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
+                                            ctx = ctx,
+                                            name_of_printer = name_of_printer,
+                                            printer_utils_cog = self
+                                            )
+
+                printer_object = await self.connect_to_printer( ctx = ctx, 
+                                                                name = name_of_printer,
+                                                                ip = ip_printer, 
+                                                                serial = serial_printer, 
+                                                                access_code  = access_code_printer
+                                                            )
+                
+                if printer_object is None:
+                    break
+
+                state_of_printer = printer_object.get_state()
+
+                if state_of_printer == "PRINTING":
+                    
+                
+            
 
 async def setup(bot):
     await bot.add_cog(PrinterUtils(bot))
