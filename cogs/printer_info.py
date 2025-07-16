@@ -98,7 +98,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             return f"Printer Error Code: {printer_error_code}"
 
 
-    async def finish_time_format(remaining_time):
+    async def finish_time_format(self, remaining_time):
         if remaining_time is not None:
             finish_time = datetime.datetime.now() + datetime.timedelta(
                 minutes=int(remaining_time))
