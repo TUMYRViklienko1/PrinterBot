@@ -105,19 +105,19 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             return finish_time.strftime("%Y-%m-%d %H:%M:%S")
         else:
             return "NA"
-    async def get_camera_frame(self, printer_object):
+    async def get_camera_frame(self, printer_object, name_of_printer: str):
         printer_image = printer_object.get_camera_image()
-        printer_image.save("img/camera_frame.png")
+        printer_image.save(f"img/camera_frame_{name_of_printer}.png")
 
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
         if printer_object.get_state() == "RUNNING":
-            await self.get_camera_frame(printer_object=printer_object)
+            await self.get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
             image_filename = f"camera_frame_{name_of_printer}.png"
-            image_main_location = discord.File("img/camera_frame.png", filename=image_filename)
+            image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
             embed_set_image_url = f"attachment://{image_filename}"
         else:
             image_filename = "default_camera_frame.png"
-            image_main_location = discord.File("img/default_camera_frame.png", filename=image_filename)
+            image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
             embed_set_image_url = f"attachment://{image_filename}"
 
         embed = discord.Embed(
