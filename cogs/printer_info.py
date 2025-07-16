@@ -6,6 +6,7 @@ from discord import app_commands
 import logging
 import time
 import datetime
+from enums import MenuCallBack
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,9 @@ class Menu(discord.ui.Select):
          
         await interaction.response.defer(ephemeral=True)
 
-        if self.callback_status == 0:
+        if self.callback_status == MenuCallBack.CALLBACK_CONNECTION_CHECK:
             await self.parent_cog.status_show_callback(self.ctx, self.values[0], self.printer_utils_cog)
-        elif self.callback_status == 1:
+        elif self.callback_status == MenuCallBack.CALLBACK_STATUS_SHOW:
             await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
 
 class MenuView(discord.ui.View):
