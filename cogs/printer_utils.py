@@ -8,6 +8,7 @@ import json, asyncio, pathlib
 from pathlib import Path
 import logging
 import ipaddress
+from discord.ext import commands, tasks
 
 from typing import Optional
 
@@ -20,6 +21,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.connected_printers = self.load_printers()
         self.bot.connected_printers = self.connected_printers
         self.printer = None 
+        self.monitor_printers.start()
 
     def get_connected_printers(self) -> (dict):
         return self.connected_printers
@@ -129,6 +131,11 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
+    @tasks.loop(seconds = 5)
+    async def monitor_printers(self):
+        channel = self.bot.get_channel(1391080605122297916)
+        if channel:
+            await channel.send(f"🟢 Print started on")
 
 async def setup(bot):
     await bot.add_cog(PrinterUtils(bot))
