@@ -2,6 +2,7 @@ data/
 venv/
 log/
 .env
+img/camera_frame_*.png
 
 **/__pycache__/
 cogs/__pycache__

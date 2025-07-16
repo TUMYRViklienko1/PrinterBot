@@ -92,27 +92,48 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     
     async def printer_error_handler(self, printer_object):
         printer_error_code = printer_object.print_error_code()
-        if printer_error_code is 0:
+        if printer_error_code == 0:
             return "No errors."
         else:
             return f"Printer Error Code: {printer_error_code}"
 
 
-    async def finish_time_format(remaining_time):
+    async def finish_time_format(self, remaining_time):
         if remaining_time is not None:
             finish_time = datetime.datetime.now() + datetime.timedelta(
                 minutes=int(remaining_time))
             return finish_time.strftime("%Y-%m-%d %H:%M:%S")
         else:
             return "NA"
+    async def get_camera_frame(self, printer_object, name_of_printer: str):
+        printer_image = printer_object.get_camera_image()
+        printer_image.save(f"img/camera_frame_{name_of_printer}.png")
 
     async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
+        if printer_object.get_state() == "RUNNING":
+            await self.get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
+            image_filename = f"camera_frame_{name_of_printer}.png"
+            image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
+            embed_set_image_url = f"attachment://{image_filename}"
+        else:
+            image_filename = "default_camera_frame.png"
+            image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
+            embed_set_image_url = f"attachment://{image_filename}"
 
-        embed = discord.Embed(title=f"Name: {name_of_printer}", description = "Status of the printer:", color=0x7309de)
-        embed.set_author(name=ctx.author.display_name,
-                             url = "",
-                             icon_url=ctx.message.author.avatar.url)
+        embed = discord.Embed(
+            title=f"Name: {name_of_printer}",
+            description="Status of the printer:",
+            color=0x7309de
+        )
+        
+        embed.set_author(
+            name=ctx.author.display_name,
+            url="",
+            icon_url=ctx.author.avatar.url  # updated to use ctx.author for clarity
+        )
+        
         embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
+
         embed.add_field(
             name="Print Time",
             value=(
@@ -166,9 +187,16 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             inline=False
         )
 
-        
+        embed.add_field(
+            name="\u200b",  # Blank field name for layout
+            value=f"{await self.printer_error_handler(printer_object=printer_object)}",
+            inline=False
+        )
 
-        await ctx.send(embed=embed)
+        embed.set_image(url=embed_set_image_url)
+
+        await ctx.send(file=image_main_location, embed=embed)
+
 
     async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
         await ctx.send(f"Status for printer: {name_of_printer}")
