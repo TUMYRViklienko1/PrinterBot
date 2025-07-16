@@ -6,6 +6,7 @@ from discord import app_commands
 import logging
 import time
 import datetime
+from .enums import MenuCallBack
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,9 @@ class Menu(discord.ui.Select):
          
         await interaction.response.defer(ephemeral=True)
 
-        if self.callback_status == 0:
+        if self.callback_status == MenuCallBack.CALLBACK_STATUS_SHOW:
             await self.parent_cog.status_show_callback(self.ctx, self.values[0], self.printer_utils_cog)
-        elif self.callback_status == 1:
+        elif self.callback_status == MenuCallBack.CALLBACK_CONNECTION_CHECK:
             await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
 
 class MenuView(discord.ui.View):
@@ -239,7 +240,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
         await ctx.send(
             "📋 Select the printer option:",
-            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx , callback_status = 0)
+            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx , callback_status = MenuCallBack.CALLBACK_STATUS_SHOW)
         )
 
     @commands.hybrid_command(name="list", description="Display list of the printer")
@@ -268,7 +269,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         await self.check_printer_list(ctx = ctx, printer_utils_cog= printer_utils_cog)
         await ctx.send(
             "📋 Select the printer option:",
-            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx,  callback_status = 1)
+            view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx,  callback_status = MenuCallBack.CALLBACK_CONNECTION_CHECK)
         )
 
 # discord​‐py ≥ 2.0 expects an *async* setup function
