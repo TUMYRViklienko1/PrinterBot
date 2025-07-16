@@ -13,7 +13,6 @@ import os
 
 from typing import Optional
 
-import printer_info
 
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")

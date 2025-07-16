@@ -1,4 +1,3 @@
-import  os
 import asyncio
 import discord
 from discord.ext import commands
@@ -24,8 +23,9 @@ async def sync(ctx):
     logger.info(f"Synced {len(synced)} command(s).")
 
 async def load_cogs():
+    import os
     # List of files to ignore (utility modules, init files, etc.)
-    ignore_files = {'__init__.py', 'printer_helpers.py', 'utils.py'}
+    ignore_files = {'__init__.py','enums.py' , 'printer_helpers.py', 'utils.py'}
 
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py') and filename not in ignore_files:

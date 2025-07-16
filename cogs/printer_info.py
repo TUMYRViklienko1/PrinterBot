@@ -6,7 +6,7 @@ from discord import app_commands
 import logging
 import time
 import datetime
-from enums import MenuCallBack
+from .enums import MenuCallBack
 
 logger = logging.getLogger(__name__)
 
