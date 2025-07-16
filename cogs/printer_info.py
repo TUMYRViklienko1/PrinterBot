@@ -6,8 +6,12 @@ from discord import app_commands
 import logging
 import time
 import datetime
-from .enums import MenuCallBack
+from .utils.enums import MenuCallBack
 from .ui.printer_menu import MenuView
+import bambulabs_api as bl
+ 
+
+from .utils.printer_helpers import get_printer_data
 
 logger = logging.getLogger(__name__)
 
@@ -34,19 +38,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             await ctx.send(embed=embed)
 
             return 
-    async def get_printer_data(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
-        printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
 
-        if printer_info is None:
-            # Handle the case where the printer doesn't exist
-            print(f"❌ Printer '{name_of_printer}' not found.")
-            return
-
-        ip_printer = printer_info["ip"]
-        serial_printer = printer_info["serial"]
-        access_code_printer = printer_info["access_code"]
-
-        return ip_printer, serial_printer, access_code_printer
     
     async def printer_error_handler(self, printer_object):
         printer_error_code = printer_object.print_error_code()
@@ -67,7 +59,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         printer_image = printer_object.get_camera_image()
         printer_image.save(f"img/camera_frame_{name_of_printer}.png")
 
-    async def embed_printer_info(self, ctx: commands.Context, printer_object, name_of_printer: str):
+    async def embed_printer_info(self, ctx: commands.Context, printer_object:bl.Printer, name_of_printer: str):
         if printer_object.get_state() == "RUNNING":
             await self.get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
             image_filename = f"camera_frame_{name_of_printer}.png"
@@ -156,30 +148,8 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         await ctx.send(file=image_main_location, embed=embed)
 
 
-    async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
-        await ctx.send(f"Status for printer: {name_of_printer}")
-
-        ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
-                                        ctx = ctx,
-                                        name_of_printer = name_of_printer,
-                                        printer_utils_cog = printer_utils_cog
-                                        )
-
-        printer_object = await printer_utils_cog.connect_to_printer( ctx = ctx, 
-                                                    name = name_of_printer,
-                                                    ip = ip_printer,   
-                                                    serial = serial_printer, 
-                                                    access_code  = access_code_printer)
-        
-        if printer_object is None:
-            return
-        
-        await self.embed_printer_info(ctx=ctx, printer_object=printer_object, name_of_printer=name_of_printer)
-
-
-
-    async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog) -> (bool):
-        ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
+    async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):
+        ip_printer, serial_printer, access_code_printer = await get_printer_data(
                                         ctx = ctx,
                                         name_of_printer = name_of_printer,
                                         printer_utils_cog = printer_utils_cog
@@ -190,6 +160,15 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
                                                             access_code  = access_code_printer
                                                             )
 
+    async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
+        await ctx.send(f"Status for printer: {name_of_printer}")
+
+        printer_object = await self.connection_check_callback(ctx=ctx, name_of_printer=name_of_printer, printer_utils_cog=printer_utils_cog)
+        
+        if printer_object is None:
+            return
+        
+        await self.embed_printer_info(ctx=ctx, printer_object=printer_object, name_of_printer=name_of_printer)
 
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):

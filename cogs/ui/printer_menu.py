@@ -1,5 +1,5 @@
 import discord
-from ..enums import MenuCallBack
+from ..utils.enums import MenuCallBack
 
 
 class Menu(discord.ui.Select):
