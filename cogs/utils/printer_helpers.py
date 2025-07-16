@@ -15,3 +15,9 @@ async def get_printer_data(ctx: commands.Context, name_of_printer: str, printer_
 
     return ip_printer, serial_printer, access_code_printer
 
+async def printer_error_handler(printer_object):
+    printer_error_code = printer_object.print_error_code()
+    if printer_error_code == 0:
+        return "No errors."
+    else:
+        return f"Printer Error Code: {printer_error_code}"

@@ -12,6 +12,7 @@ import bambulabs_api as bl
  
 
 from .utils.printer_helpers import get_printer_data
+from .utils.printer_helpers import printer_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +39,6 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             await ctx.send(embed=embed)
 
             return 
-
-    
-    async def printer_error_handler(self, printer_object):
-        printer_error_code = printer_object.print_error_code()
-        if printer_error_code == 0:
-            return "No errors."
-        else:
-            return f"Printer Error Code: {printer_error_code}"
-
 
     async def finish_time_format(self, remaining_time):
         if remaining_time is not None:
@@ -133,13 +125,13 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
         embed.add_field(
             name="Errors",
-            value=f"`Error:` {await self.printer_error_handler(printer_object=printer_object)}",
+            value=f"`Error:` {await printer_error_handler(printer_object=printer_object)}",
             inline=False
         )
 
         embed.add_field(
             name="\u200b",  # Blank field name for layout
-            value=f"{await self.printer_error_handler(printer_object=printer_object)}",
+            value=f"{await printer_error_handler(printer_object=printer_object)}",
             inline=False
         )
 
