@@ -26,7 +26,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.connected_printers = self.load_printers()
         self.bot.connected_printers = self.connected_printers
         self.printer = None 
-        self.monitor_printers.start()
+        #self.monitor_printers.start()
 
     def get_connected_printers(self) -> (dict):
         return self.connected_printers
@@ -143,34 +143,34 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
-    @tasks.loop(seconds = 5)
-    async def monitor_printers(self):
-        name_of_the_cog = "PrinterInfo"
-        printer_info_cog = await self.get_cog(name_of_the_cog)
+    # @tasks.loop(seconds = 5)
+    # async def monitor_printers(self):
+    #     name_of_the_cog = "PrinterInfo"
+    #     printer_info_cog = await self.get_cog(name_of_the_cog)
 
-        channel = self.bot.get_channel(CHANEL_ID)
-        if channel:
-            for name_of_printer in self.connected_printers:
-                ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
-                                            ctx = ctx,
-                                            name_of_printer = name_of_printer,
-                                            printer_utils_cog = self
-                                            )
+    #     channel = self.bot.get_channel(CHANEL_ID)
+    #     if channel:
+    #         for name_of_printer in self.connected_printers:
+    #             ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
+    #                                         ctx = ctx,
+    #                                         name_of_printer = name_of_printer,
+    #                                         printer_utils_cog = self
+    #                                         )
 
-                printer_object = await self.connect_to_printer( ctx = ctx, 
-                                                                name = name_of_printer,
-                                                                ip = ip_printer, 
-                                                                serial = serial_printer, 
-                                                                access_code  = access_code_printer
-                                                            )
+    #             printer_object = await self.connect_to_printer( ctx = ctx, 
+    #                                                             name = name_of_printer,
+    #                                                             ip = ip_printer, 
+    #                                                             serial = serial_printer, 
+    #                                                             access_code  = access_code_printer
+    #                                                         )
                 
-                if printer_object is None:
-                    break
+    #             if printer_object is None:
+    #                 break
 
-                state_of_printer = printer_object.get_state()
+    #             state_of_printer = printer_object.get_state()
 
-                if state_of_printer == "PRINTING":
-                    
+    #             if state_of_printer == "PRINTING":
+
                 
             
 
