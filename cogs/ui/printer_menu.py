@@ -1,6 +1,5 @@
 import discord
-from ..utils.enums import MenuCallBack
-
+from ..utils import MenuCallBack
 
 class Menu(discord.ui.Select):
     def __init__(self, ctx, printer_utils_cog, parent_cog, callback_status: int):

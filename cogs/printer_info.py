@@ -4,15 +4,14 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
-import time
-import datetime
 from .utils.enums import MenuCallBack
 from .ui.printer_menu import MenuView
 import bambulabs_api as bl
  
-
-from .utils.printer_helpers import get_printer_data
-from .utils.printer_helpers import printer_error_handler
+from .utils import get_printer_data
+from .utils import printer_error_handler
+from .utils import finish_time_format
+from .utils import get_camera_frame
 
 logger = logging.getLogger(__name__)
 
@@ -40,20 +39,9 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
             return 
 
-    async def finish_time_format(self, remaining_time):
-        if remaining_time is not None:
-            finish_time = datetime.datetime.now() + datetime.timedelta(
-                minutes=int(remaining_time))
-            return finish_time.strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            return "NA"
-    async def get_camera_frame(self, printer_object, name_of_printer: str):
-        printer_image = printer_object.get_camera_image()
-        printer_image.save(f"img/camera_frame_{name_of_printer}.png")
-
     async def embed_printer_info(self, ctx: commands.Context, printer_object:bl.Printer, name_of_printer: str):
         if printer_object.get_state() == "RUNNING":
-            await self.get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
+            await get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
             image_filename = f"camera_frame_{name_of_printer}.png"
             image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
             embed_set_image_url = f"attachment://{image_filename}"
@@ -80,7 +68,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             name="Print Time",
             value=(
                 f"`Current:` {printer_object.get_time()}\n"
-                f"`Finish:`  {await self.finish_time_format(printer_object.get_time())}\n"
+                f"`Finish:`  {await finish_time_format(printer_object.get_time())}\n"
             ),
             inline=True
         )
