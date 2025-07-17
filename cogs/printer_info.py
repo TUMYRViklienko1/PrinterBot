@@ -28,16 +28,12 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
 
 
-    async def check_printer_list(self, ctx: commands.Context, printer_utils_cog):
+    async def check_printer_list(self, ctx, printer_utils_cog) -> bool:
         if not printer_utils_cog.connected_printers:
-
-            embed = discord.Embed(title="❌ No Printers in the list",
-                                description="To add the printer use /connect", 
-                                color=0x7309de)
-            
+            embed = discord.Embed(title="❌ No Printers in the list", description="To add the printer use /connect", color=0x7309de)
             await ctx.send(embed=embed)
-
-            return 
+            return False
+        return True
 
     async def _get_printer_utils_cog(self, ctx:commands.Context):
         cog = await get_cog(ctx, self.bot, "PrinterUtils")
@@ -121,8 +117,10 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         name_of_cog = "PrinterUtils"
         printer_utils_cog = await self._get_printer_utils_cog(ctx = ctx)
         
-        await self.check_printer_list(ctx = ctx, printer_utils_cog= printer_utils_cog)
-
+        if not await self.check_printer_list(ctx = ctx, printer_utils_cog= printer_utils_cog):
+            logger.debug("No Printers in the list")
+            return
+        
         await ctx.send(
             "📋 Select the printer option:",
             view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx,  callback_status = MenuCallBack.CALLBACK_CONNECTION_CHECK)
