@@ -2,6 +2,10 @@ from discord.ext import commands
 import time
 import datetime
 import bambulabs_api as bl
+import logging
+from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 async def get_printer_data(ctx: commands.Context, name_of_printer: str, printer_utils_cog):
     printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
@@ -16,6 +20,17 @@ async def get_printer_data(ctx: commands.Context, name_of_printer: str, printer_
     access_code_printer = printer_info["access_code"]
 
     return ip_printer, serial_printer, access_code_printer
+
+async def get_camera_frame(printer_object:bl.Printer, name_of_printer: str):
+    printer_image = printer_object.get_camera_image()
+    printer_image.save(f"img/camera_frame_{name_of_printer}.png")
+
+async def get_cog(ctx: commands.Context, bot, name_of_cog: str)  -> Optional[bl.Printer]:
+    printer_cog = bot.get_cog(name_of_cog)
+    if not printer_cog:
+        logger.error(f"Can't load cog with name: {name_of_cog}")
+        return None
+    return printer_cog
 
 async def printer_error_handler(printer_object)->str:
     printer_error_code = printer_object.print_error_code()
@@ -32,6 +47,3 @@ async def finish_time_format(remaining_time)->str:
     else:
         return "NA"
     
-async def get_camera_frame(printer_object:bl.Printer, name_of_printer: str):
-    printer_image = printer_object.get_camera_image()
-    printer_image.save(f"img/camera_frame_{name_of_printer}.png")

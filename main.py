@@ -24,7 +24,6 @@ async def sync(ctx):
 
 async def load_cogs():
     import os
-    # List of files to ignore (utility modules, init files, etc.)
 
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):

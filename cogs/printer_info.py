@@ -14,6 +14,7 @@ from .utils import get_printer_data
 from .utils import printer_error_handler
 from .utils import finish_time_format
 from .utils import get_camera_frame
+from .utils import get_cog
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +22,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     def __init__(self, bot):
         self.bot = bot
 
-    async def get_cog(self, ctx: commands.Context, name_of_cog: str)  -> Optional[bl.Printer]:
-        printer_cog = self.bot.get_cog(name_of_cog)
-        if not printer_cog:
-            logger.error(f"Can't load cog with name: {name_of_cog}")
-            return None
-        return printer_cog
+
 
     async def check_printer_list(self, ctx: commands.Context, printer_utils_cog):
         if not printer_utils_cog.connected_printers:
@@ -153,10 +149,10 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
-        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+        printer_utils_cog = await get_cog(ctx = ctx, bot=self.bot, name_of_cog = name_of_cog)
 
         if printer_utils_cog is None:
-            await ctx.send(f"Can't load cog with name: {name_of_cog}")
+            await ctx.send(f"❌ Can't load cog with name: {name_of_cog}")
             return
         
         await ctx.send(
@@ -167,7 +163,11 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     @commands.hybrid_command(name="list", description="Display list of the printer")
     async def list_all_printers(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
-        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+        printer_utils_cog = await get_cog(ctx = ctx, bot=self.bot ,name_of_cog = name_of_cog)
+
+        if printer_utils_cog is None:
+            await ctx.send(f"❌ Can't load cog with name: {name_of_cog}")
+            return
 
         if not printer_utils_cog.connected_printers:
             await ctx.send("❌ No Printers in the list.")
@@ -185,7 +185,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     @commands.hybrid_command(name="check_connection", description="Check connection of the 3D printer")
     async def check_connection(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
-        printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+        printer_utils_cog = await get_cog(ctx = ctx, bot=self.bot ,name_of_cog = name_of_cog)
         
         await self.check_printer_list(ctx = ctx, printer_utils_cog= printer_utils_cog)
         await ctx.send(
