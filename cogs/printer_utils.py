@@ -1,16 +1,14 @@
 # cogs/printer.py
 
-from __future__ import annotations
-from discord.ext import commands
-import bambulabs_api as bl
 import asyncio
-import json, asyncio, pathlib
-from pathlib import Path
+import json
 import logging
-import ipaddress
-from discord.ext import commands, tasks
 import os
+import ipaddress
+from pathlib import Path
 
+import bambulabs_api as bl
+from discord.ext import commands, tasks
 from typing import Optional
 
 from .utils import PrinterCredentials
@@ -22,7 +20,7 @@ CHANEL_ID = os.getenv("CHANEL_ID")
 class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_description="Control 3D printers"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.printer_file = Path("data/printer.jason")
+        self.printer_file = Path("data/printer.json")
         self.connected_printers = self.load_printers()
         self.bot.connected_printers = self.connected_printers
         self.printer = None 
