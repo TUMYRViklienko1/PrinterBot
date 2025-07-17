@@ -8,8 +8,6 @@ import logging
 import bambulabs_api as bl
 from typing import Optional
 
-
-
 from .ui import MenuView
 from .ui import build_printer_status_embed
 
@@ -61,16 +59,10 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
 
     async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):
-        ip_printer, serial_printer, access_code_printer = await get_printer_data(
-                                        ctx = ctx,
-                                        name_of_printer = name_of_printer,
-                                        printer_utils_cog = printer_utils_cog
-                                        )
 
-        return await printer_utils_cog.connect_to_printer(  ctx = ctx, name = name_of_printer,
-                                                            ip = ip_printer, serial = serial_printer, 
-                                                            access_code  = access_code_printer
-                                                            )
+        printer_data = await get_printer_data(ctx = ctx, name_of_printer = name_of_printer, printer_utils_cog = printer_utils_cog)
+        
+        return await printer_utils_cog.connect_to_printer(ctx = ctx, name = name_of_printer, printer_data = printer_data)
 
     async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
         logger.debug(f"Status for printer: {name_of_printer}")

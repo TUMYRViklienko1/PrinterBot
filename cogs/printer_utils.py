@@ -1,18 +1,17 @@
 # cogs/printer.py
 
-from __future__ import annotations
-from discord.ext import commands
-import bambulabs_api as bl
 import asyncio
-import json, asyncio, pathlib
-from pathlib import Path
+import json
 import logging
-import ipaddress
-from discord.ext import commands, tasks
 import os
+import ipaddress
+from pathlib import Path
 
+import bambulabs_api as bl
+from discord.ext import commands, tasks
 from typing import Optional
 
+from .utils import PrinterCredentials
 
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")
@@ -21,11 +20,10 @@ CHANEL_ID = os.getenv("CHANEL_ID")
 class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_description="Control 3D printers"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.printer_file = Path("data/printer.jason")
+        self.printer_file = Path("data/printer.json")
         self.connected_printers = self.load_printers()
         self.bot.connected_printers = self.connected_printers
         self.printer = None 
-        #self.monitor_printers.start()
 
     def get_connected_printers(self) -> (dict):
         return self.connected_printers
@@ -72,12 +70,10 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
     self,
     ctx: commands.Context,
     name: str,
-    ip: str,
-    serial: str,
-    access_code: str
+    printer_data: PrinterCredentials
     ) -> Optional[bl.Printer]:
         try:
-            printer = bl.Printer(ip, access_code, serial)
+            printer = bl.Printer(printer_data.ip, printer_data.access_code, printer_data.serial)
             printer.connect()
 
             for _ in range(10):
@@ -87,7 +83,6 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             else:
                 logger.error("Failed to connect to printer via MQTT.")
                 await ctx.send(f"❌ Could not connect to `{name}` via MQTT.")
-                #Could be incorrect solution. 
                 await asyncio.to_thread(printer.disconnect)
 
                 return None
@@ -118,7 +113,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         
 
     @commands.hybrid_command(name="connect", description="Connect to a 3D Printer")
-    async def connect(self, ctx: commands.Context, name: str, ip: str, serial: str, access_code: str):
+    async def connect(self, ctx: commands.Context, name: str, ip: str, access_code: str, serial: str):
         await ctx.defer(ephemeral=True)
 
         # Continue as usual...
@@ -127,15 +122,17 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
         logger.info(f"Attempting connection to printer: {name}")
 
-        printer = await self.connect_to_printer(ctx, name=name, ip=ip, serial=serial, access_code=access_code)
+        printer_data = PrinterCredentials(ip=ip, access_code= access_code, serial= serial)
+
+        printer = await self.connect_to_printer(ctx, name=name, printer_data= printer_data)
 
         if printer is not None:
             try:
 
                 self.connected_printers[name] = {
                     "ip": ip,
-                    "serial": serial,
-                    "access_code": access_code
+                    "access_code": access_code,
+                    "serial": serial
                 }
 
                 self.save_printers()
