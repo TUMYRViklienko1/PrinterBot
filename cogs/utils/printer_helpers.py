@@ -5,25 +5,27 @@ import bambulabs_api as bl
 import logging
 from typing import Optional
 
+from .models import PrinterCredentials
+
 logger = logging.getLogger(__name__)
 
 async def get_printer_data(
     ctx: commands.Context, 
     name_of_printer: str, 
     printer_utils_cog
-) -> Optional[tuple[str, str, str]]:
+) -> Optional[PrinterCredentials]:
+    
     printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
 
     if printer_info is None:
-        # Handle the case where the printer doesn't exist
-        print(f"❌ Printer '{name_of_printer}' not found.")
+        logger.error(f"Printer '{name_of_printer}' not found.")
         return
 
-    ip_printer = printer_info["ip"]
-    serial_printer = printer_info["serial"]
-    access_code_printer = printer_info["access_code"]
-
-    return ip_printer, serial_printer, access_code_printer
+    return PrinterCredentials(
+        ip=printer_info["ip"],
+        access_code=printer_info["access_code"],
+        serial=printer_info["serial"]
+    )
 
 async def get_camera_frame(printer_object:bl.Printer, name_of_printer: str):
     printer_image = printer_object.get_camera_image()
