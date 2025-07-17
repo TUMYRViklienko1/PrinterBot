@@ -6,6 +6,7 @@ import logging
 import os
 import ipaddress
 from pathlib import Path
+from dataclasses import asdict
 
 import bambulabs_api as bl
 from discord.ext import commands, tasks
@@ -130,13 +131,9 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         if printer is not None:
             try:
 
-                self.connected_printers[name] = {
-                    "ip": ip,
-                    "access_code": access_code,
-                    "serial": serial
-                }
-
-                self.save_printers()
+                self.connected_printers[name] = asdict(printer_data)
+                self.storage.save(self.connected_printers)
+                
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
