@@ -89,6 +89,10 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
         printer_utils_cog = await self._get_printer_utils_cog(ctx = ctx)
         
+        if not await self.check_printer_list(ctx=ctx, printer_utils_cog=printer_utils_cog):
+            logger.debug("No Printers in the list")
+            return
+
         await ctx.send(
             "📋 Select the printer option:",
             view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx , callback_status = MenuCallBack.CALLBACK_STATUS_SHOW)
@@ -107,7 +111,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         embed = discord.Embed(
             title="🖨️ Connected Printers",
             description=description,
-            color=discord.Color.blue()
+            color= 0x7309de
         )
 
         await ctx.send(embed=embed)

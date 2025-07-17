@@ -15,15 +15,12 @@ class Menu(discord.ui.Select):
             for printer_name in printer_utils_cog.connected_printers.keys()
         ]
 
-        if not options:
-            options = [discord.SelectOption(label="No printers connected", value="none", default=True)]
-
         super().__init__(
             placeholder="Please select a printer:",
             min_values=1,
             max_values=1,
             options=options,
-            disabled=(options[0].value == "none")
+            disabled= False
         )
 
     async def callback(self, interaction: discord.Interaction):
