@@ -7,7 +7,9 @@ import logging
 from .utils.enums import MenuCallBack
 from .ui.printer_menu import MenuView
 import bambulabs_api as bl
- 
+from typing import Optional
+
+
 from .utils import get_printer_data
 from .utils import printer_error_handler
 from .utils import finish_time_format
@@ -15,18 +17,16 @@ from .utils import get_camera_frame
 
 logger = logging.getLogger(__name__)
 
-
-
 class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Display info about your 3D Printer"):
     def __init__(self, bot):
         self.bot = bot
 
-    async def get_cog(self, ctx: commands.Context, name_of_cog: str):
-        printer_utils_cog = self.bot.get_cog(name_of_cog)
-        if not printer_utils_cog:
-            await ctx.send("❌ Printer utilities not loaded.")
-            return
-        return printer_utils_cog
+    async def get_cog(self, ctx: commands.Context, name_of_cog: str)  -> Optional[bl.Printer]:
+        printer_cog = self.bot.get_cog(name_of_cog)
+        if not printer_cog:
+            logger.error(f"Can't load cog with name: {name_of_cog}")
+            return None
+        return printer_cog
 
     async def check_printer_list(self, ctx: commands.Context, printer_utils_cog):
         if not printer_utils_cog.connected_printers:
@@ -154,6 +154,11 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     async def status(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
         printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
+
+        if printer_utils_cog is None:
+            await ctx.send(f"Can't load cog with name: {name_of_cog}")
+            return
+        
         await ctx.send(
             "📋 Select the printer option:",
             view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx , callback_status = MenuCallBack.CALLBACK_STATUS_SHOW)
@@ -165,7 +170,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         printer_utils_cog = await self.get_cog(ctx = ctx, name_of_cog = name_of_cog)
 
         if not printer_utils_cog.connected_printers:
-            await ctx.send("No Printers in the list")
+            await ctx.send("❌ No Printers in the list.")
             return 
         
         description = "\n".join(f"• {name}" for name in printer_utils_cog.connected_printers)
