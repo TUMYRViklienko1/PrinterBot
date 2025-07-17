@@ -66,40 +66,55 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         await asyncio.sleep(1)
         await check_light(printer.turn_light_off, "turned off")
 
+    def _create_printer(self, printer_data: PrinterCredentials) -> bl.Printer:
+        printer = bl.Printer(printer_data.ip, printer_data.access_code, printer_data.serial)
+        printer.connect()
+        return printer
+    
+    async def _connect_mqtt(self, ctx:commands.Context, printer: bl.Printer, printer_name: str) -> bool:
+        for _ in range(10):
+            if printer.mqtt_client.is_connected():
+                return True
+            await asyncio.sleep(0.3)
+
+        await ctx.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
+        await asyncio.to_thread(printer.disconnect)
+        return False
+
+    async def _check_printer_status(self, ctx:commands.Context, printer: bl.Printer, printer_name: str) -> Optional[str]:
+        for _ in range(10):
+            status = printer.get_state()
+            if status != "UNKNOWN":
+                return status
+            await asyncio.sleep(0.3)
+
+        await ctx.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
+        logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
+        return None
+
+
     async def connect_to_printer(
     self,
     ctx: commands.Context,
-    name: str,
+    printer_name: str,
     printer_data: PrinterCredentials
     ) -> Optional[bl.Printer]:
         try:
-            printer = bl.Printer(printer_data.ip, printer_data.access_code, printer_data.serial)
-            printer.connect()
 
-            for _ in range(10):
-                if printer.mqtt_client.is_connected():
-                    break
-                await asyncio.sleep(0.3)
-            else:
-                logger.error("Failed to connect to printer via MQTT.")
-                await ctx.send(f"❌ Could not connect to `{name}` via MQTT.")
-                await asyncio.to_thread(printer.disconnect)
+            printer = self._create_printer(printer_data = printer_data)
 
+            if await self._connect_mqtt(ctx=ctx, printer=printer, printer_name=printer_name) is False:
+                logger.error(f"Could not connect to `{printer_name}` via MQTT.")
                 return None
 
-            for _ in range(10):
-                status = printer.get_state()
-                if status != "UNKNOWN":
-                    break
-                await asyncio.sleep(0.3)
-            else:
-                await ctx.send(f"⚠️ Connected to `{name}`, but status is UNKNOWN.")
-                logger.warning(f"Connected to `{name}`, but status is UNKNOWN.")
+            status = await self._check_printer_status(ctx=ctx, printer=printer, printer_name=printer_name) 
+
+            if status is None:
+                logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
                 return None
             
-            
-            await ctx.send(f"✅ Connected to `{name}` with status `{status}`.")
-            logger.debug(f"✅ Connected to `{name}` with status `{status}`.")
+            await ctx.send(f"✅ Connected to `{printer_name}` with status `{status}`.")
+            logger.debug(f"Connected to `{printer_name}` with status `{status}`.")
 
             await self.light_printer_check(ctx = ctx, printer = printer)
 
