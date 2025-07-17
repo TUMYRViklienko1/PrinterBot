@@ -10,7 +10,10 @@ from ..utils.printer_helpers import finish_time_format
 from ..utils.printer_helpers import printer_error_handler
 
 
-async def build_printer_status_embed(ctx, printer_object: bl.Printer, name_of_printer: str, image_url: str) -> discord.Embed:
+async def build_printer_status_embed(ctx: commands.Context,
+                                     printer_object: bl.Printer,
+                                     name_of_printer: str,
+                                     image_url: str) -> discord.Embed:
     embed = discord.Embed(
                 title=f"Name: {name_of_printer}",
                 description="Status of the printer:",

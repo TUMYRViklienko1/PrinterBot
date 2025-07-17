@@ -98,11 +98,11 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     async def list_all_printers(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
         printer_utils_cog = await self._get_printer_utils_cog(ctx = ctx)
-
-        if not printer_utils_cog.connected_printers:
-            await ctx.send("❌ No Printers in the list.")
-            return 
         
+        if not await self.check_printer_list(ctx=ctx, printer_utils_cog=printer_utils_cog):
+            logger.debug("No Printers in the list")
+            return
+
         description = "\n".join(f"• {name}" for name in printer_utils_cog.connected_printers)
         embed = discord.Embed(
             title="🖨️ Connected Printers",
