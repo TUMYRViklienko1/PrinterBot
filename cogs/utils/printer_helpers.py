@@ -7,7 +7,11 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-async def get_printer_data(ctx: commands.Context, name_of_printer: str, printer_utils_cog):
+async def get_printer_data(
+    ctx: commands.Context, 
+    name_of_printer: str, 
+    printer_utils_cog
+) -> Optional[tuple[str, str, str]]:
     printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
 
     if printer_info is None:
