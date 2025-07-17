@@ -12,6 +12,7 @@ from discord.ext import commands, tasks
 from typing import Optional
 
 from .utils import PrinterCredentials
+from .utils import PrinterStorage
 
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")
@@ -20,23 +21,8 @@ CHANEL_ID = os.getenv("CHANEL_ID")
 class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_description="Control 3D printers"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.printer_file = Path("data/printer.json")
-        self.connected_printers = self.load_printers()
-        self.bot.connected_printers = self.connected_printers
-        self.printer = None 
-
-    def get_connected_printers(self) -> (dict):
-        return self.connected_printers
-
-    def load_printers(self):
-        if not self.printer_file.exists():
-            return {}
-        with open(self.printer_file) as file_read:
-            return json.load(file_read)
-    
-    def save_printers(self):
-        with open(self.printer_file, "w") as file_write:
-            json.dump(self.connected_printers, file_write, indent=4)
+        self.storage = PrinterStorage()
+        self.connected_printers = self.storage.load()
     
     async def get_cog(self, name_of_cog: str):
         printer_utils_cog = self.bot.get_cog(name_of_cog)
