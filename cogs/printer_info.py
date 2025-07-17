@@ -35,6 +35,12 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
             return 
 
+    async def _get_printer_utils_cog(self, ctx:commands.Context):
+        cog = await get_cog(ctx, self.bot, "PrinterUtils")
+        if cog is None:
+            await ctx.send("❌ Can't load cog with name: PrinterUtils")
+        return cog
+
     async def embed_printer_info(self, ctx: commands.Context, printer_object:bl.Printer, name_of_printer: str):
         if printer_object.get_state() == "RUNNING":
             await get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
@@ -137,7 +143,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
                                                             )
 
     async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
-        await ctx.send(f"Status for printer: {name_of_printer}")
+        logger.debug(f"Status for printer: {name_of_printer}")
 
         printer_object = await self.connection_check_callback(ctx=ctx, name_of_printer=name_of_printer, printer_utils_cog=printer_utils_cog)
         
@@ -149,11 +155,9 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
-        printer_utils_cog = await get_cog(ctx = ctx, bot=self.bot, name_of_cog = name_of_cog)
 
-        if printer_utils_cog is None:
-            await ctx.send(f"❌ Can't load cog with name: {name_of_cog}")
-            return
+
+        printer_utils_cog = await self._get_printer_utils_cog(ctx = ctx)
         
         await ctx.send(
             "📋 Select the printer option:",
@@ -163,11 +167,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     @commands.hybrid_command(name="list", description="Display list of the printer")
     async def list_all_printers(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
-        printer_utils_cog = await get_cog(ctx = ctx, bot=self.bot ,name_of_cog = name_of_cog)
-
-        if printer_utils_cog is None:
-            await ctx.send(f"❌ Can't load cog with name: {name_of_cog}")
-            return
+        printer_utils_cog = await self._get_printer_utils_cog(ctx = ctx)
 
         if not printer_utils_cog.connected_printers:
             await ctx.send("❌ No Printers in the list.")
@@ -185,9 +185,10 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
     @commands.hybrid_command(name="check_connection", description="Check connection of the 3D printer")
     async def check_connection(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"
-        printer_utils_cog = await get_cog(ctx = ctx, bot=self.bot ,name_of_cog = name_of_cog)
+        printer_utils_cog = await self._get_printer_utils_cog(ctx = ctx)
         
         await self.check_printer_list(ctx = ctx, printer_utils_cog= printer_utils_cog)
+        
         await ctx.send(
             "📋 Select the printer option:",
             view=MenuView(printer_utils_cog=printer_utils_cog, parent_cog=self, ctx=ctx,  callback_status = MenuCallBack.CALLBACK_CONNECTION_CHECK)
