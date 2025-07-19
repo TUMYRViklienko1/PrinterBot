@@ -6,7 +6,11 @@ from discord import app_commands
 import logging
 
 import bambulabs_api as bl
+from bambulabs_api import GcodeState
+
 from typing import Optional
+from functools import partial 
+from typing import Callable, Awaitable
 
 from .ui import MenuView
 from .ui import build_printer_status_embed
@@ -18,6 +22,9 @@ from .utils import printer_error_handler
 from .utils import finish_time_format
 from .utils import get_camera_frame
 from .utils import get_cog
+from .utils import ImageCredentials
+from .utils import set_image_default_credentials_callback
+from .utils import set_image_custom_credentials_callback
 
 logger = logging.getLogger(__name__)
 
@@ -40,46 +47,52 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             await ctx.send("❌ Can't load cog with name: PrinterUtils")
         return cog
 
-    async def embed_printer_info(self, ctx: commands.Context, printer_object:bl.Printer, name_of_printer: str):
-        if printer_object.get_state() == "RUNNING":
-            await get_camera_frame(printer_object=printer_object, name_of_printer=name_of_printer)
-            image_filename = f"camera_frame_{name_of_printer}.png"
-            image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
-            embed_set_image_url = f"attachment://{image_filename}"
-            delete_image_callback = True
+
+    async def embed_printer_info(
+        self,
+        ctx: commands.Context,
+        printer_object: bl.Printer,
+        printer_name: str,
+        set_image_callback: Callable[[], Awaitable[ImageCredentials]]):     
+
+        image_credentials = await set_image_callback()
+        embed = await build_printer_status_embed(
+            ctx=ctx,
+            printer_object=printer_object,
+            printer_name=printer_name,
+            image_url=image_credentials.embed_set_image_url
+        )
+
+        await ctx.send(file=image_credentials.image_main_location, embed=embed)
+
+        await delete_image(
+            delete_image_callback=image_credentials.delete_image_flag,
+            image_filename=image_credentials.image_filename
+        )
+        
+    async def connection_check_callback(self, ctx:commands.Context, printer_name: str, printer_utils_cog) -> bl.Printer:
+
+        printer_data = await get_printer_data(ctx = ctx, printer_name = printer_name, printer_utils_cog = printer_utils_cog)
+        
+        return await printer_utils_cog.connect_to_printer(ctx = ctx, printer_name = printer_name, printer_data = printer_data)
+
+    async def status_show_callback(self, ctx: commands.Context, printer_name: str, printer_utils_cog):
+        logger.debug(f"Status for printer: {printer_name}")
+
+        printer_object = await self.connection_check_callback(ctx=ctx, printer_name=printer_name, printer_utils_cog=printer_utils_cog)
+        
+        if printer_object.get_state() == GcodeState.RUNNING:
+            set_image_cb = partial(set_image_custom_credentials_callback, printer_name=printer_name, printer_object=printer_object)
         else:
-            image_filename = "default_camera_frame.png"
-            image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
-            embed_set_image_url = f"attachment://{image_filename}"
-            delete_image_callback = False
+            set_image_cb = set_image_default_credentials_callback
 
-        embed = await build_printer_status_embed(ctx=ctx,
-                                                printer_object=printer_object,
-                                                name_of_printer=name_of_printer,
-                                                image_url=embed_set_image_url)
-
-        await ctx.send(file=image_main_location, embed=embed)
-
-        if not await delete_image(delete_image_callback = delete_image_callback, image_filename = image_filename):
-            return False
-
-    async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):
-
-        printer_data = await get_printer_data(ctx = ctx, name_of_printer = name_of_printer, printer_utils_cog = printer_utils_cog)
-        
-        return await printer_utils_cog.connect_to_printer(ctx = ctx, printer_name = name_of_printer, printer_data = printer_data)
-
-    async def status_show_callback(self, ctx: commands.Context, name_of_printer: str, printer_utils_cog):
-        logger.debug(f"Status for printer: {name_of_printer}")
-
-        printer_object = await self.connection_check_callback(ctx=ctx, name_of_printer=name_of_printer, printer_utils_cog=printer_utils_cog)
-        
-        if printer_object is None:
-            logger.error("connection failed in the status")
-            return
-        
-        await self.embed_printer_info(ctx=ctx, printer_object=printer_object, name_of_printer=name_of_printer)
-
+        await self.embed_printer_info(
+            ctx=ctx,
+            printer_object=printer_object,
+            printer_name=printer_name,
+            set_image_callback=set_image_cb
+        )
+                    
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
         name_of_cog = "PrinterUtils"

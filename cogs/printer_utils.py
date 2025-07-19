@@ -133,7 +133,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 if printer is None:
                     logger.info(f"skip status check for printer {printer_name}")
                 printer_current_state = printer.get_state()
-                if printer_current_state != self.printer_previous_state:
+                # if printer_current_state != self.printer_previous_state:
                     
         else:
             logger.debug("No printers in the list")

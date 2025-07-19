@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 async def build_printer_status_embed(ctx: commands.Context,
                                      printer_object: bl.Printer,
-                                     name_of_printer: str,
+                                     printer_name: str,
                                      image_url: str) -> discord.Embed:
     embed = discord.Embed(
-                title=f"Name: {name_of_printer}",
+                title=f"Name: {printer_name}",
                 description="Status of the printer:",
                 color=0x7309de
             )

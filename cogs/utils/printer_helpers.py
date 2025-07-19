@@ -7,6 +7,7 @@ from typing import Optional
 import asyncio
 
 from .models import PrinterCredentials
+from .models import ImageCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,9 @@ async def get_printer_data(
         serial=printer_info["serial"]
     )
 
-async def get_camera_frame(printer_object:bl.Printer, name_of_printer: str):
+async def get_camera_frame(printer_object:bl.Printer, pinter_name: str):
     printer_image = printer_object.get_camera_image()
-    printer_image.save(f"img/camera_frame_{name_of_printer}.png")
+    printer_image.save(f"img/camera_frame_{pinter_name}.png")
 
 async def get_cog(ctx: commands.Context, bot, name_of_cog: str)  -> Optional[bl.Printer]:
     printer_cog = bot.get_cog(name_of_cog)
@@ -45,7 +46,14 @@ async def printer_error_handler(printer_object)->str:
         return "No errors."
     else:
         return f"Printer Error Code: {printer_error_code}"
-    
+
+async def set_image_default_credentials_callback()->ImageCredentials:
+    return ImageCredentials()
+
+async def set_image_custom_credentials_callback(printer_name, printer_object) -> ImageCredentials:
+    await get_camera_frame(printer_object=printer_object, name_of_printer=printer_name)
+    return ImageCredentials(image_filename=f"camera_frame_{printer_name}.png", delete_image_flag=True)
+
 async def finish_time_format(remaining_time)->str:
     if remaining_time is not None:
         finish_time = datetime.datetime.now() + datetime.timedelta(
