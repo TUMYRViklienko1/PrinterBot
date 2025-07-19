@@ -11,27 +11,31 @@ from .models import ImageCredentials
 
 logger = logging.getLogger(__name__)
 
+def get_printer_data_dict(printer_data:dict):
+    return PrinterCredentials(
+    ip=printer_data["ip"],
+    access_code=printer_data["access_code"],
+    serial=printer_data["serial"]
+    )   
+ 
+
 async def get_printer_data(
     ctx: commands.Context, 
     printer_name: str, 
     printer_utils_cog
 ) -> Optional[PrinterCredentials]:
     
-    printer_info = printer_utils_cog.connected_printers.get(printer_name)
+    printer_data = printer_utils_cog.connected_printers.get(printer_name)
 
-    if printer_info is None:
+    if printer_data is None:
         logger.error(f"Printer '{printer_name}' not found.")
         return
 
-    return PrinterCredentials(
-        ip=printer_info["ip"],
-        access_code=printer_info["access_code"],
-        serial=printer_info["serial"]
-    )
+    return get_printer_data_dict(printer_data=printer_data)
 
-async def get_camera_frame(printer_object:bl.Printer, pinter_name: str):
+async def get_camera_frame(printer_object:bl.Printer, printer_name: str):
     printer_image = printer_object.get_camera_image()
-    printer_image.save(f"img/camera_frame_{pinter_name}.png")
+    printer_image.save(f"img/camera_frame_{printer_name}.png")
 
 async def get_cog(ctx: commands.Context, bot, name_of_cog: str)  -> Optional[bl.Printer]:
     printer_cog = bot.get_cog(name_of_cog)

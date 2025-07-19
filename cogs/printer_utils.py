@@ -9,13 +9,18 @@ from pathlib import Path
 from dataclasses import asdict
 
 import bambulabs_api as bl
+from bambulabs_api import GcodeState
 from discord.ext import commands, tasks
 from typing import Optional
+
+from .ui import embed_printer_info
 
 from .utils import PrinterCredentials
 from .utils import PrinterStorage
 from .utils import light_printer_check
 from .utils import get_cog
+from .utils import set_image_custom_credentials_callback
+from .utils import get_printer_data_dict
 
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")
@@ -25,11 +30,12 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.storage = PrinterStorage()
-        self.connected_printers = self.storage.load()
+        self.connected_printers:dict = self.storage.load()
         self.monitor_printers.start()
         self.ctx = commands.Context
-        self.printer_previous_state:str = "RUNNING"
-        
+        self.previous_state_dict:dict = {}
+
+
     async def _validate_ip(self, ctx: commands.Context, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
@@ -125,19 +131,38 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
-    @tasks.loop(seconds = 5)
+    @tasks.loop(seconds=5)
     async def monitor_printers(self):
-        pass
-        # if self.connected_printers:
-        #     for printer_name, printer_data in self.connected_printers.items():
-        #         printer = await self.connect_to_printer(ctx=self.ctx, printer_name= printer_name, printer_data=PrinterCredentials(printer_data))
-        #         if printer is None:
-        #             logger.info(f"skip status check for printer {printer_name}")
-        #         printer_current_state = printer.get_state()
-        #         # if printer_current_state != self.printer_previous_state:
-                    
-        # else:
-        #     logger.debug("No printers in the list")
+        if not self.connected_printers:
+            logger.debug("No printers in the list")
+            return
+
+        for printer_name, printer_data in self.connected_printers.items():
+            printer_credentials = get_printer_data_dict(printer_data=printer_data)
+            printer = await self.connect_to_printer(
+                ctx=self.ctx,
+                printer_name=printer_name,
+                printer_data=printer_credentials
+            )
+            if printer is None:
+                logger.info(f"Skip status check for printer {printer_name}")
+                continue
+
+            printer_current_state = printer.get_state()
+            previous_state = self.previous_state_dict.get(printer_name)
+
+            if printer_current_state in (GcodeState.RUNNING, GcodeState.FINISH, GcodeState.FAILED):
+                if previous_state != printer_current_state:
+                    await embed_printer_info(
+                        ctx=self.ctx,
+                        printer_object=printer,
+                        printer_name=printer_name,
+                        set_image_callback=set_image_custom_credentials_callback(
+                            printer_name=printer_name,
+                            printer_object=printer
+                        )
+                    )
+                    self.previous_state_dict[printer_name] = printer_current_state
                 
             
 

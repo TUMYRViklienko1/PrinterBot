@@ -15,6 +15,7 @@ from typing import Callable, Awaitable
 from .ui import MenuView
 from .ui import build_printer_status_embed
 from .ui import delete_image
+from .ui import embed_printer_info
 
 from .utils import MenuCallBack
 from .utils import get_printer_data
@@ -48,27 +49,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         return cog
 
 
-    async def embed_printer_info(
-        self,
-        ctx: commands.Context,
-        printer_object: bl.Printer,
-        printer_name: str,
-        set_image_callback: Callable[[], Awaitable[ImageCredentials]]):     
 
-        image_credentials = await set_image_callback()
-        embed = await build_printer_status_embed(
-            ctx=ctx,
-            printer_object=printer_object,
-            printer_name=printer_name,
-            image_url=image_credentials.embed_set_image_url
-        )
-
-        await ctx.send(file=image_credentials.image_main_location, embed=embed)
-
-        await delete_image(
-            delete_image_callback=image_credentials.delete_image_flag,
-            image_filename=image_credentials.image_filename
-        )
         
     async def connection_check_callback(self, ctx:commands.Context, printer_name: str, printer_utils_cog) -> bl.Printer:
 
@@ -86,7 +67,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         else:
             set_image_cb = set_image_default_credentials_callback
 
-        await self.embed_printer_info(
+        await embed_printer_info(
             ctx=ctx,
             printer_object=printer_object,
             printer_name=printer_name,

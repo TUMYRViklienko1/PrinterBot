@@ -5,11 +5,35 @@ import bambulabs_api as bl
 
 import os
 import logging
+from typing import Callable, Awaitable
 
 from ..utils.printer_helpers import finish_time_format
 from ..utils.printer_helpers import printer_error_handler
 
+from ..utils.models import ImageCredentials
+
 logger = logging.getLogger(__name__)
+
+async def embed_printer_info(
+    ctx: commands.Context,
+    printer_object: bl.Printer,
+    printer_name: str,
+    set_image_callback: Callable[[], Awaitable[ImageCredentials]]):     
+
+    image_credentials = await set_image_callback()
+    embed = await build_printer_status_embed(
+        ctx=ctx,
+        printer_object=printer_object,
+        printer_name=printer_name,
+        image_url=image_credentials.embed_set_image_url
+    )
+
+    await ctx.send(file=image_credentials.image_main_location, embed=embed)
+
+    await delete_image(
+        delete_image_callback=image_credentials.delete_image_flag,
+        image_filename=image_credentials.image_filename
+    )
 
 async def build_printer_status_embed(ctx: commands.Context,
                                      printer_object: bl.Printer,
