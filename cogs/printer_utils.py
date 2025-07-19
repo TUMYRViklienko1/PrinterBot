@@ -15,6 +15,7 @@ from typing import Optional
 from .utils import PrinterCredentials
 from .utils import PrinterStorage
 from .utils import light_printer_check
+from .utils import get_cog
 
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")
@@ -27,7 +28,8 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.connected_printers = self.storage.load()
         self.monitor_printers.start()
         self.ctx = commands.Context
-
+        self.printer_previous_state:str = "RUNNING"
+        
     async def _validate_ip(self, ctx: commands.Context, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
@@ -127,7 +129,12 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
     async def monitor_printers(self):
         if self.connected_printers:
             for printer_name, printer_data in self.connected_printers.items():
-                self.connect_to_printer(ctx=self.ctx, printer_name= printer_name, )
+                printer = await self.connect_to_printer(ctx=self.ctx, printer_name= printer_name, printer_data=PrinterCredentials(printer_data))
+                if printer is None:
+                    logger.info(f"skip status check for printer {printer_name}")
+                printer_current_state = printer.get_state()
+                if printer_current_state != self.printer_previous_state:
+                    
         else:
             logger.debug("No printers in the list")
                 
