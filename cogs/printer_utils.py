@@ -127,16 +127,17 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
     @tasks.loop(seconds = 5)
     async def monitor_printers(self):
-        if self.connected_printers:
-            for printer_name, printer_data in self.connected_printers.items():
-                printer = await self.connect_to_printer(ctx=self.ctx, printer_name= printer_name, printer_data=PrinterCredentials(printer_data))
-                if printer is None:
-                    logger.info(f"skip status check for printer {printer_name}")
-                printer_current_state = printer.get_state()
-                # if printer_current_state != self.printer_previous_state:
+        pass
+        # if self.connected_printers:
+        #     for printer_name, printer_data in self.connected_printers.items():
+        #         printer = await self.connect_to_printer(ctx=self.ctx, printer_name= printer_name, printer_data=PrinterCredentials(printer_data))
+        #         if printer is None:
+        #             logger.info(f"skip status check for printer {printer_name}")
+        #         printer_current_state = printer.get_state()
+        #         # if printer_current_state != self.printer_previous_state:
                     
-        else:
-            logger.debug("No printers in the list")
+        # else:
+        #     logger.debug("No printers in the list")
                 
             
 

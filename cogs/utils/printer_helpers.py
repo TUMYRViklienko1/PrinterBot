@@ -13,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 async def get_printer_data(
     ctx: commands.Context, 
-    name_of_printer: str, 
+    printer_name: str, 
     printer_utils_cog
 ) -> Optional[PrinterCredentials]:
     
-    printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
+    printer_info = printer_utils_cog.connected_printers.get(printer_name)
 
     if printer_info is None:
-        logger.error(f"Printer '{name_of_printer}' not found.")
+        logger.error(f"Printer '{printer_name}' not found.")
         return
 
     return PrinterCredentials(
@@ -51,7 +51,7 @@ async def set_image_default_credentials_callback()->ImageCredentials:
     return ImageCredentials()
 
 async def set_image_custom_credentials_callback(printer_name, printer_object) -> ImageCredentials:
-    await get_camera_frame(printer_object=printer_object, name_of_printer=printer_name)
+    await get_camera_frame(printer_object=printer_object, printer_name=printer_name)
     return ImageCredentials(image_filename=f"camera_frame_{printer_name}.png", delete_image_flag=True)
 
 async def finish_time_format(remaining_time)->str:
