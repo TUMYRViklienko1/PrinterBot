@@ -25,7 +25,9 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.bot = bot
         self.storage = PrinterStorage()
         self.connected_printers = self.storage.load()
-    
+        self.monitor_printers.start()
+        self.ctx = commands.Context
+
     async def _validate_ip(self, ctx: commands.Context, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
@@ -121,34 +123,13 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
-    # @tasks.loop(seconds = 5)
-    # async def monitor_printers(self):
-    #     name_of_the_cog = "PrinterInfo"
-    #     printer_info_cog = await self.get_cog(name_of_the_cog)
-
-    #     channel = self.bot.get_channel(CHANEL_ID)
-    #     if channel:
-    #         for name_of_printer in self.connected_printers:
-    #             ip_printer, serial_printer, access_code_printer = await self.get_printer_data(
-    #                                         ctx = ctx,
-    #                                         name_of_printer = name_of_printer,
-    #                                         printer_utils_cog = self
-    #                                         )
-
-    #             printer_object = await self.connect_to_printer( ctx = ctx, 
-    #                                                             name = name_of_printer,
-    #                                                             ip = ip_printer, 
-    #                                                             serial = serial_printer, 
-    #                                                             access_code  = access_code_printer
-    #                                                         )
-                
-    #             if printer_object is None:
-    #                 break
-
-    #             state_of_printer = printer_object.get_state()
-
-    #             if state_of_printer == "PRINTING":
-
+    @tasks.loop(seconds = 5)
+    async def monitor_printers(self):
+        if self.connected_printers:
+            for printer_name, printer_data in self.connected_printers.items():
+                self.connect_to_printer(ctx=self.ctx, printer_name= printer_name, )
+        else:
+            logger.debug("No printers in the list")
                 
             
 
