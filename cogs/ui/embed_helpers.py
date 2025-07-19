@@ -6,6 +6,7 @@ import bambulabs_api as bl
 import os
 import logging
 from typing import Callable, Awaitable
+from typing import Optional
 
 from ..utils.printer_helpers import finish_time_format
 from ..utils.printer_helpers import printer_error_handler
@@ -15,49 +16,58 @@ from ..utils.models import ImageCredentials
 logger = logging.getLogger(__name__)
 
 async def embed_printer_info(
-    ctx: commands.Context,
+    status_channel,
     printer_object: bl.Printer,
     printer_name: str,
-    set_image_callback: Callable[[], Awaitable[ImageCredentials]]):     
+    set_image_callback: Callable[[], Awaitable[ImageCredentials]],
+    ctx: Optional[commands.Context] = None):     
 
     image_credentials = await set_image_callback()
     embed = await build_printer_status_embed(
-        ctx=ctx,
+        status_channel=status_channel,
         printer_object=printer_object,
         printer_name=printer_name,
-        image_url=image_credentials.embed_set_image_url
+        image_url=image_credentials.embed_set_image_url,
+        ctx=ctx
     )
 
-    await ctx.send(file=image_credentials.image_main_location, embed=embed)
+    await status_channel.send(file=image_credentials.image_main_location, embed=embed)
 
     await delete_image(
         delete_image_callback=image_credentials.delete_image_flag,
         image_filename=image_credentials.image_filename
     )
 
-async def build_printer_status_embed(ctx: commands.Context,
-                                     printer_object: bl.Printer,
-                                     printer_name: str,
-                                     image_url: str) -> discord.Embed:
+async def build_printer_status_embed(
+    printer_object: bl.Printer,
+    printer_name: str,
+    image_url: str,
+    ctx: Optional[commands.Context] = None
+    ) -> discord.Embed:
+
     embed = discord.Embed(
-                title=f"Name: {printer_name}",
-                description="Status of the printer:",
-                color=0x7309de
-            )
-        
-    embed.set_author(
-        name=ctx.author.display_name,
-        url="",
-        icon_url=ctx.author.avatar.url  # updated to use ctx.author for clarity
+        title=f"Name: {printer_name}",
+        description="Status of the printer:",
+        color=0x7309de
     )
-    
+
+    # Add author info only if ctx is provided (e.g., during a command)
+    if ctx and ctx.author:
+        try:
+            embed.set_author(
+                name=ctx.author.display_name,
+                icon_url=ctx.author.avatar.url
+            )
+        except Exception:
+            pass  # Fail silently if avatar or other info is missing
+
     embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
 
     embed.add_field(
         name="Print Time",
         value=(
             f"`Current:` {printer_object.get_time()}\n"
-            f"`Finish:`  {await finish_time_format(printer_object.get_time())}\n"
+            f"`Finish:`  {await finish_time_format(printer_object.get_time())}"
         ),
         inline=True
     )
@@ -67,16 +77,14 @@ async def build_printer_status_embed(ctx: commands.Context,
         value=(
             f"`Percent:` {printer_object.get_percentage()}%\n"
             f"`Layer:`   {printer_object.current_layer_num()}/{printer_object.total_layer_num()}\n"
-            f"`Speed:`   {printer_object.get_print_speed()} (100%)\n"
+            f"`Speed:`   {printer_object.get_print_speed()} (100%)"
         ),
         inline=True
     )
 
     embed.add_field(
         name="Lights",
-        value=(
-            f"`Chamber:` {printer_object.get_light_state()}\n"
-        ),
+        value=f"`Chamber:` {printer_object.get_light_state()}",
         inline=True
     )
 
@@ -85,7 +93,7 @@ async def build_printer_status_embed(ctx: commands.Context,
         value=(
             f"`Bed:`     {printer_object.get_bed_temperature()}°C\n"
             f"`Nozzle:`  {printer_object.get_nozzle_temperature()}°C\n"
-            f"`Chamber:` {printer_object.get_chamber_temperature()}°C\n"
+            f"`Chamber:` {printer_object.get_chamber_temperature()}°C"
         ),
         inline=True
     )
@@ -95,20 +103,21 @@ async def build_printer_status_embed(ctx: commands.Context,
         value=(
             f"`Main 1:`   {printer_object.mqtt_client.get_part_fan_speed()}%\n"
             f"`Main 2:`   {printer_object.mqtt_client.get_aux_fan_speed()}%\n"
-            f"`Cooling:`  {printer_object.mqtt_client.get_chamber_fan_speed()}%\n"
+            f"`Cooling:`  {printer_object.mqtt_client.get_chamber_fan_speed()}%"
         ),
         inline=True
     )
 
+    error_msg = await printer_error_handler(printer_object=printer_object)
     embed.add_field(
         name="Errors",
-        value=f"`Error:` {await printer_error_handler(printer_object=printer_object)}",
+        value=f"`Error:` {error_msg}",
         inline=False
     )
 
     embed.add_field(
-        name="\u200b",  # Blank field name for layout
-        value=f"{await printer_error_handler(printer_object=printer_object)}",
+        name="\u200b",  # Spacer
+        value=error_msg,
         inline=False
     )
 

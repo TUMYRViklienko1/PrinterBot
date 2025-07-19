@@ -66,7 +66,7 @@ async def finish_time_format(remaining_time)->str:
     else:
         return "NA"
     
-async def light_printer_check(ctx: commands.Context, printer:bl.Printer) -> bool:
+async def light_printer_check(printer:bl.Printer) -> bool:
     def check_light(action_func, action_name):
         if action_func():
             logger.debug(f"Light {action_name} successfully.")

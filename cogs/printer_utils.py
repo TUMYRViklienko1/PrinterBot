@@ -34,13 +34,14 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.monitor_printers.start()
         self.ctx = commands.Context
         self.previous_state_dict:dict = {}
+        self.status_channel_id = int(os.getenv("CHANEL_ID"))
+        self.status_channel = self.bot.get_channel(self.status_channel_id)
 
-
-    async def _validate_ip(self, ctx: commands.Context, ip: str) -> bool:
+    async def _validate_ip(self, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
         except ValueError:
-            await ctx.send(f"❌ Invalid IP address: `{ip}`.")
+            await self.status_channel.send(f"❌ Invalid IP address: `{ip}`.")
             return False
         return True
             
@@ -49,31 +50,30 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         printer.connect()
         return printer
     
-    async def _connect_mqtt(self, ctx:commands.Context, printer: bl.Printer, printer_name: str) -> bool:
+    async def _connect_mqtt(self, printer: bl.Printer, printer_name: str) -> bool:
         for _ in range(10):
             if printer.mqtt_client.is_connected():
                 return True
             await asyncio.sleep(0.3)
 
-        await ctx.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
+        await self.status_channel.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
         await asyncio.to_thread(printer.disconnect)
         return False
 
-    async def _check_printer_status(self, ctx:commands.Context, printer: bl.Printer, printer_name: str) -> Optional[str]:
+    async def _check_printer_status(self, printer: bl.Printer, printer_name: str) -> Optional[str]:
         for _ in range(10):
             status = printer.get_state()
             if status != "UNKNOWN":
                 return status
             await asyncio.sleep(0.3)
 
-        await ctx.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
+        await self.status_channel.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
         logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
         return None
 
 
     async def connect_to_printer(
     self,
-    ctx: commands.Context,
     printer_name: str,
     printer_data: PrinterCredentials
     ) -> Optional[bl.Printer]:
@@ -81,20 +81,19 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
             printer = self._create_printer(printer_data = printer_data)
 
-            if await self._connect_mqtt(ctx=ctx, printer=printer, printer_name=printer_name) is False:
+            if await self._connect_mqtt(printer=printer, printer_name=printer_name) is False:
                 logger.error(f"Could not connect to `{printer_name}` via MQTT.")
                 return None
 
-            status = await self._check_printer_status(ctx=ctx, printer=printer, printer_name=printer_name) 
+            status = await self._check_printer_status(printer=printer, printer_name=printer_name) 
 
             if status is None:
                 logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
                 return None
             
-            await ctx.send(f"✅ Connected to `{printer_name}` with status `{status}`.")
-            logger.debug(f"Connected to `{printer_name}` with status `{status}`.")
+            logger.info(f"Connected to `{printer_name}` with status `{status}`.")
 
-            if not await light_printer_check(ctx = ctx, printer = printer):
+            if not await light_printer_check(printer = printer):
                 logger.error("return none in the light_printer_check")
                 return None
 
@@ -102,7 +101,6 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         
         except Exception as e:
             logger.exception("Unhandled exception during connect")
-            await ctx.send(f"❌ Error occurred: `{str(e)}`")
             return None
             
         
@@ -137,10 +135,17 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             logger.debug("No printers in the list")
             return
 
+        try:
+            status_channel = await self.bot.fetch_channel(self.status_channel_id)
+        except Exception as e:
+            logger.error(f"Failed to fetch status channel: {e}")
+            return
+
+        await status_channel.send("❌ Invalid IP address.")
+
         for printer_name, printer_data in self.connected_printers.items():
             printer_credentials = get_printer_data_dict(printer_data=printer_data)
             printer = await self.connect_to_printer(
-                ctx=self.ctx,
                 printer_name=printer_name,
                 printer_data=printer_credentials
             )
@@ -154,13 +159,13 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             if printer_current_state in (GcodeState.RUNNING, GcodeState.FINISH, GcodeState.FAILED):
                 if previous_state != printer_current_state:
                     await embed_printer_info(
-                        ctx=self.ctx,
                         printer_object=printer,
                         printer_name=printer_name,
                         set_image_callback=set_image_custom_credentials_callback(
                             printer_name=printer_name,
                             printer_object=printer
-                        )
+                        ),
+                        status_channel=status_channel
                     )
                     self.previous_state_dict[printer_name] = printer_current_state
                 
