@@ -85,6 +85,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             logger.debug(f"Connected to `{printer_name}` with status `{status}`.")
 
             if not await light_printer_check(ctx = ctx, printer = printer):
+                logger.error("return none in the light_printer_check")
                 return None
 
             return printer

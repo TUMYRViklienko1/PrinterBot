@@ -53,14 +53,14 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             embed_set_image_url = f"attachment://{image_filename}"
             delete_image_callback = False
 
-        embed = build_printer_status_embed(ctx=ctx,
-                                           printer_object=printer_object,
-                                           name_of_printer=name_of_printer,
-                                           image_url=embed_set_image_url)
+        embed = await build_printer_status_embed(ctx=ctx,
+                                                printer_object=printer_object,
+                                                name_of_printer=name_of_printer,
+                                                image_url=embed_set_image_url)
 
         await ctx.send(file=image_main_location, embed=embed)
 
-        if not delete_image(delete_image_callback = delete_image_callback, image_filename = image_filename):
+        if not await delete_image(delete_image_callback = delete_image_callback, image_filename = image_filename):
             return False
 
     async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):

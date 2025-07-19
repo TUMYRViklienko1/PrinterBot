@@ -1,11 +1,15 @@
 import asyncio
 import discord
 from discord.ext import commands
-from config.config import DISCORD_TOKEN, logger 
+from config.config import DISCORD_TOKEN 
+
+import logging
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+
+logger = logging.getLogger(__name__)
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 

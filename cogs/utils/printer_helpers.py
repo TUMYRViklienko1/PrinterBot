@@ -54,8 +54,8 @@ async def finish_time_format(remaining_time)->str:
     else:
         return "NA"
     
-async def light_printer_check(ctx: commands.Context, printer:bl.Printer):
-    async def check_light(action_func, action_name):
+async def light_printer_check(ctx: commands.Context, printer:bl.Printer) -> bool:
+    def check_light(action_func, action_name):
         if action_func():
             logger.debug(f"Light {action_name} successfully.")
             return True
@@ -63,6 +63,14 @@ async def light_printer_check(ctx: commands.Context, printer:bl.Printer):
             logger.error(f"Light NOT {action_name} successfully.")
             return False
     
-    await check_light(printer.turn_light_on, "turned on")
+    if not check_light(printer.turn_light_on, "turned on"):
+        logger.error("Light turned on NOT successfully.")
+        return False
+    
     await asyncio.sleep(1)
-    await check_light(printer.turn_light_off, "turned off")
+
+    if not check_light(printer.turn_light_off, "turned off"):
+        logger.error("Light turned OFF NOT successfully.")
+        return False
+    
+    return True

@@ -12,15 +12,13 @@ os.makedirs(DATA_DIR_NAME, exist_ok=True)
 # Load environment variables
 load_dotenv()
 
-os.makedirs("log", exist_ok=True)
-
 # Read and validate Discord token
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 if not DISCORD_TOKEN:
     raise ValueError("DISCORD_TOKEN is missing from environment variables.")
 
 # Read debug level
-debug_level_str = os.getenv("DEBUG", "ERROR").upper()
+debug_level_str = os.getenv("DEBUG", "DEBUG").upper()
 DEBUG_LEVEL = getattr(logging, debug_level_str, logging.ERROR)
 
 # Configure logging
@@ -28,7 +26,8 @@ logging.basicConfig(
     level=DEBUG_LEVEL,
     filename="log/bot.log",
     filemode="w",
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    force=True
 )
 
 logger = logging.getLogger("discord_bot")
