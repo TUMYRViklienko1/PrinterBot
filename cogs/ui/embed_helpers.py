@@ -3,12 +3,13 @@ import discord
 
 import bambulabs_api as bl
 
-import time
-import datetime
+import os
+import logging
 
 from ..utils.printer_helpers import finish_time_format
 from ..utils.printer_helpers import printer_error_handler
 
+logger = logging.getLogger(__name__)
 
 async def build_printer_status_embed(ctx: commands.Context,
                                      printer_object: bl.Printer,
@@ -90,3 +91,14 @@ async def build_printer_status_embed(ctx: commands.Context,
     embed.set_image(url=image_url)
 
     return embed
+
+async def delete_image(delete_image_callback: bool, image_filename: str) -> bool:
+    if delete_image_callback:
+        try: 
+            os.remove(f"img/{image_filename}")
+            logger.debug(f"File '{image_filename}' deleted successfully.")
+            return True
+        
+        except FileNotFoundError: 
+            logger.exception(f"File '{image_filename}' not found.")
+            return False

@@ -10,6 +10,7 @@ from typing import Optional
 
 from .ui import MenuView
 from .ui import build_printer_status_embed
+from .ui import delete_image
 
 from .utils import MenuCallBack
 from .utils import get_printer_data
@@ -45,10 +46,12 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
             image_filename = f"camera_frame_{name_of_printer}.png"
             image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
             embed_set_image_url = f"attachment://{image_filename}"
+            delete_image_callback = True
         else:
             image_filename = "default_camera_frame.png"
             image_main_location = discord.File(f"img/{image_filename}", filename=image_filename)
             embed_set_image_url = f"attachment://{image_filename}"
+            delete_image_callback = False
 
         embed = build_printer_status_embed(ctx=ctx,
                                            printer_object=printer_object,
@@ -57,6 +60,8 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
         await ctx.send(file=image_main_location, embed=embed)
 
+        if not delete_image(delete_image_callback = delete_image_callback, image_filename = image_filename):
+            return False
 
     async def connection_check_callback(self, ctx:commands.Context, name_of_printer: str, printer_utils_cog):
 
@@ -70,6 +75,7 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
         printer_object = await self.connection_check_callback(ctx=ctx, name_of_printer=name_of_printer, printer_utils_cog=printer_utils_cog)
         
         if printer_object is None:
+            logger.error("connection failed in the status")
             return
         
         await self.embed_printer_info(ctx=ctx, printer_object=printer_object, name_of_printer=name_of_printer)
