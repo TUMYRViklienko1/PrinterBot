@@ -38,29 +38,34 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.status_channel_id = int(os.getenv("CHANEL_ID"))
         self.status_channel = self.bot.get_channel(self.status_channel_id)
         self.connected_printer_objects: dict[str, bl.Printer]  = dict.fromkeys(self.connected_printers.keys(), None)
-    async def backoff_checker(self,
-                              action_func_callback,
-                              action_name:str,
-                              interval:float = 0.3,
-                              max_attempts:int = 5,
-                              exponential:int = 2) -> bool:
-        for attempt in range(1, max_attempts+1):
-            if action_func_callback():
+    async def backoff_checker(
+        self,
+        action_func_callback,
+        action_name: str,
+        interval: float = 0.3,
+        max_attempts: int = 5,
+        exponential: int = 2,
+        success_condition=lambda result: bool(result)
+    ) -> Optional[any]:
+        for attempt in range(1, max_attempts + 1):
+            result = action_func_callback()
+
+            if success_condition(result):
                 logger.info(f"Successfully done {action_name}")
-                return True
-            sleep_time = interval * math.pow(exponential,attempt-1)
+                return result
+
+            sleep_time = interval * math.pow(exponential, attempt - 1)
+            logger.info(f"Retrying to {action_name}. Retry {attempt}/{max_attempts}. Sleeping {sleep_time:.1f}s")
             await asyncio.sleep(sleep_time)
-            logger.info(f"Retrying to {action_name}. Retry {attempt}/{max_attempts}. Sleeping {sleep_time:.1f}s ")
 
         logger.error(f"Could not perform {action_name} after {max_attempts} attempts.")
-        return False
+        return None
     
     async def _validate_ip(self, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
         except ValueError:
             logging.error(f"Invalid IP address: `{ip}`.")
-            # await self.status_channel.send(f"❌ Invalid IP address: `{ip}`.")
             return False
         return True
             
@@ -70,30 +75,32 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         return printer
     
     async def _connect_mqtt(self, printer: bl.Printer, printer_name: str) -> bool:
-        action_name = f"printer_mqtt_connection to {printer_name}"
-        if await self.backoff_checker(action_func_callback=lambda: printer.mqtt_client.is_connected(),
-                                      action_name=action_name):
-            return True
-        return False
+        action_name = f"MQTT connection to {printer_name}"
+        result = await self.backoff_checker(
+            action_func_callback=lambda: printer.mqtt_client.is_connected(),
+            action_name=action_name,
+            interval=0.3,
+            max_attempts=5,
+            success_condition=lambda connected: connected is True
+        )
+        return result is True
 
 
     async def _check_printer_status(self, printer: bl.Printer, printer_name: str) -> Optional[str]:
-        for _ in range(10):
-            status = printer.get_state()
-            if status != "UNKNOWN":
-                return status
-            await asyncio.sleep(0.3)
-
-        # await self.status_channel.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
-        logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
-        return None
+        return await self.backoff_checker(
+            action_func_callback=lambda: printer.get_state(),
+            action_name=f"check_printer_status for {printer_name}",
+            interval=0.3,
+            max_attempts=10,
+            success_condition=lambda state: state != GcodeState.UNKNOWN
+        )
 
     async def wait_for_printer_ready(self, printer: bl.Printer, timeout: float = 5.0) -> bool:
         """Waits for the printer to have usable values after MQTT handshake."""
         end_time = asyncio.get_event_loop().time() + timeout
         while asyncio.get_event_loop().time() < end_time:
             try:
-                if printer.get_state() != "UNKNOWN" and printer.get_bed_temperature() is not None:
+                if printer.get_state() != GcodeState.UNKNOWN and printer.get_bed_temperature() is not None:
                     return True
             except Exception:
                 pass
