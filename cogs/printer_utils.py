@@ -7,12 +7,11 @@ import os
 import ipaddress
 from pathlib import Path
 from dataclasses import asdict
-import math 
+from typing import Dict, Optional
 
 import bambulabs_api as bl
 from bambulabs_api import GcodeState
 from discord.ext import commands, tasks
-from typing import Optional
 
 from .ui import embed_printer_info
 
@@ -22,6 +21,8 @@ from .utils import light_printer_check
 from .utils import get_cog
 from .utils import set_image_custom_credentials_callback
 from .utils import get_printer_data_dict
+from .utils import backoff_checker
+from .utils import PrinterDataDict
 
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")
@@ -31,36 +32,12 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.storage = PrinterStorage()
-        self.connected_printers:dict = self.storage.load()
-        self.monitor_printers.start()
-        self.ctx = commands.Context
-        self.previous_state_dict:dict = dict.fromkeys(self.connected_printers.keys(), "")
-        self.status_channel_id = int(os.getenv("CHANEL_ID"))
+        self.connected_printers:    Dict[str, PrinterDataDict] = self.storage.load()
+        self.previous_state_dict:   Dict[str, Optional[str]] = dict.fromkeys(self.connected_printers.keys(), "")
+        self.connected_printer_objects: Dict[str, Optional[bl.Printer]] = dict.fromkeys(self.connected_printers.keys(), None)
+        self.status_channel_id: int = int(CHANEL_ID)
         self.status_channel = self.bot.get_channel(self.status_channel_id)
-        self.connected_printer_objects: dict[str, bl.Printer]  = dict.fromkeys(self.connected_printers.keys(), None)
-    async def backoff_checker(
-        self,
-        action_func_callback,
-        action_name: str,
-        interval: float = 0.3,
-        max_attempts: int = 5,
-        exponential: int = 2,
-        success_condition=lambda result: bool(result)
-    ) -> Optional[any]:
-        for attempt in range(1, max_attempts + 1):
-            result = action_func_callback()
-
-            if success_condition(result):
-                logger.info(f"Successfully done {action_name}")
-                return result
-
-            sleep_time = interval * math.pow(exponential, attempt - 1)
-            logger.info(f"Retrying to {action_name}. Retry {attempt}/{max_attempts}. Sleeping {sleep_time:.1f}s")
-            await asyncio.sleep(sleep_time)
-
-        logger.error(f"Could not perform {action_name} after {max_attempts} attempts.")
-        return None
-    
+        self.monitor_printers.start()
     async def _validate_ip(self, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
@@ -76,7 +53,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
     
     async def _connect_mqtt(self, printer: bl.Printer, printer_name: str) -> bool:
         action_name = f"MQTT connection to {printer_name}"
-        result = await self.backoff_checker(
+        result = await backoff_checker(
             action_func_callback=lambda: printer.mqtt_client.is_connected(),
             action_name=action_name,
             interval=0.3,
@@ -87,7 +64,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
 
     async def _check_printer_status(self, printer: bl.Printer, printer_name: str) -> Optional[str]:
-        return await self.backoff_checker(
+        return await backoff_checker(
             action_func_callback=lambda: printer.get_state(),
             action_name=f"check_printer_status for {printer_name}",
             interval=0.3,
