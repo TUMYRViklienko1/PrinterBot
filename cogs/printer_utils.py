@@ -73,6 +73,18 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
         return None
 
+    async def wait_for_printer_ready(self, printer: bl.Printer, timeout: float = 5.0) -> bool:
+        """Waits for the printer to have usable values after MQTT handshake."""
+        end_time = asyncio.get_event_loop().time() + timeout
+        while asyncio.get_event_loop().time() < end_time:
+            try:
+                if printer.get_state() != "UNKNOWN" and printer.get_bed_temperature() is not None:
+                    return True
+            except Exception:
+                pass
+            await asyncio.sleep(0.5)
+        logger.error("Printer Values Not Available Yet")
+        return False
 
     async def connect_to_printer(
     self,
@@ -91,6 +103,10 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
             if status is None:
                 logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
+                return None
+            
+            if not await self.wait_for_printer_ready(printer):
+                logger.error("Printer values never became available")
                 return None
             
             logger.info(f"Connected to `{printer_name}` with status `{status}`.")
@@ -131,7 +147,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=15)
     async def monitor_printers(self):
         if not self.connected_printers:
             logger.debug("No printers in the list")
