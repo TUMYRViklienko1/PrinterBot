@@ -3,15 +3,16 @@ import time
 import datetime
 import bambulabs_api as bl
 import logging
-from typing import Optional
+from typing import Optional, Dict
 import asyncio
+import math
 
 from .models import PrinterCredentials
 from .models import ImageCredentials
 
 logger = logging.getLogger(__name__)
 
-def get_printer_data_dict(printer_data:dict):
+def get_printer_data_dict(printer_data:Dict[str,str]) -> PrinterCredentials:
     return PrinterCredentials(
     ip=printer_data["ip"],
     access_code=printer_data["access_code"],
@@ -49,7 +50,7 @@ async def get_cog(ctx: commands.Context, bot, name_of_cog: str)  -> Optional[bl.
         return None
     return printer_cog
 
-async def printer_error_handler(printer_object)->str:
+async def printer_error_handler(printer_object:bl.Printer)->str:
     printer_error_code = printer_object.print_error_code()
     if printer_error_code == 0:
         return "No errors."
@@ -59,7 +60,7 @@ async def printer_error_handler(printer_object)->str:
 async def set_image_default_credentials_callback()->ImageCredentials:
     return ImageCredentials()
 
-async def set_image_custom_credentials_callback(printer_name, printer_object) -> ImageCredentials:
+async def set_image_custom_credentials_callback(printer_name:str, printer_object:bl.Printer) -> ImageCredentials:
     image_filename = "camera_frame_.png"
     delete_image_flag = False
     if await get_camera_frame(printer_object=printer_object, printer_name=printer_name):
@@ -96,3 +97,24 @@ async def light_printer_check(printer:bl.Printer) -> bool:
     
     return True
 
+async def backoff_checker(
+    action_func_callback,
+    action_name: str,
+    interval: float = 0.3,
+    max_attempts: int = 5,
+    exponential: int = 2,
+    success_condition=lambda result: bool(result)
+) -> Optional[any]:
+    for attempt in range(1, max_attempts + 1):
+        result = action_func_callback()
+
+        if success_condition(result):
+            logger.info(f"Successfully done {action_name}")
+            return result
+
+        sleep_time = interval * math.pow(exponential, attempt - 1)
+        logger.info(f"Retrying to {action_name}. Retry {attempt}/{max_attempts}. Sleeping {sleep_time:.1f}s")
+        await asyncio.sleep(sleep_time)
+
+    logger.error(f"Could not perform {action_name} after {max_attempts} attempts.")
+    return None

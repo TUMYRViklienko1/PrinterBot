@@ -5,9 +5,15 @@ from pathlib import Path
 from typing import Dict
 import json
 import discord
+from typing import TypedDict
 
 @dataclass(init=True,repr=False,eq=False)
 class PrinterCredentials:
+    ip: str
+    access_code: str
+    serial: str
+
+class PrinterDataDict(TypedDict):
     ip: str
     access_code: str
     serial: str
