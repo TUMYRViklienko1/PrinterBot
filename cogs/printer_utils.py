@@ -7,6 +7,7 @@ import os
 import ipaddress
 from pathlib import Path
 from dataclasses import asdict
+import math 
 
 import bambulabs_api as bl
 from bambulabs_api import GcodeState
@@ -37,7 +38,23 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.status_channel_id = int(os.getenv("CHANEL_ID"))
         self.status_channel = self.bot.get_channel(self.status_channel_id)
         self.connected_printer_objects: dict[str, bl.Printer]  = dict.fromkeys(self.connected_printers.keys(), None)
+    async def backoff_checker(self,
+                              action_func_callback,
+                              action_name:str,
+                              interval:float = 0.3,
+                              max_attempts:int = 5,
+                              exponential:int = 2) -> bool:
+        for attempt in range(1, max_attempts+1):
+            if action_func_callback():
+                logger.info(f"Successfully done {action_name}")
+                return True
+            sleep_time = interval * math.pow(exponential,attempt-1)
+            await asyncio.sleep(sleep_time)
+            logger.info(f"Retrying to {action_name}. Retry {attempt}/{max_attempts}. Sleeping {sleep_time:.1f}s ")
 
+        logger.error(f"Could not perform {action_name} after {max_attempts} attempts.")
+        return False
+    
     async def _validate_ip(self, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
@@ -53,15 +70,12 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         return printer
     
     async def _connect_mqtt(self, printer: bl.Printer, printer_name: str) -> bool:
-        for _ in range(10):
-            if printer.mqtt_client.is_connected():
-                return True
-            await asyncio.sleep(0.3)
-
-        logging.error(f"Could not connect to `{printer_name}` via MQTT.")
-        # await self.status_channel.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
-        await asyncio.to_thread(printer.disconnect)
+        action_name = f"printer_mqtt_connection to {printer_name}"
+        if await self.backoff_checker(action_func_callback=lambda: printer.mqtt_client.is_connected(),
+                                      action_name=action_name):
+            return True
         return False
+
 
     async def _check_printer_status(self, printer: bl.Printer, printer_name: str) -> Optional[str]:
         for _ in range(10):
