@@ -36,12 +36,14 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.previous_state_dict:dict = dict.fromkeys(self.connected_printers.keys(), "")
         self.status_channel_id = int(os.getenv("CHANEL_ID"))
         self.status_channel = self.bot.get_channel(self.status_channel_id)
+        self.connected_printer_objects: dict[str, bl.Printer]  = dict.fromkeys(self.connected_printers.keys(), None)
 
     async def _validate_ip(self, ip: str) -> bool:
         try:
             ipaddress.ip_address(ip)
         except ValueError:
-            await self.status_channel.send(f"❌ Invalid IP address: `{ip}`.")
+            logging.error(f"Invalid IP address: `{ip}`.")
+            # await self.status_channel.send(f"❌ Invalid IP address: `{ip}`.")
             return False
         return True
             
@@ -56,7 +58,8 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 return True
             await asyncio.sleep(0.3)
 
-        await self.status_channel.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
+        logging.error(f"Could not connect to `{printer_name}` via MQTT.")
+        # await self.status_channel.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
         await asyncio.to_thread(printer.disconnect)
         return False
 
@@ -67,10 +70,22 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 return status
             await asyncio.sleep(0.3)
 
-        await self.status_channel.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
+        # await self.status_channel.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
         logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
         return None
 
+    async def wait_for_printer_ready(self, printer: bl.Printer, timeout: float = 5.0) -> bool:
+        """Waits for the printer to have usable values after MQTT handshake."""
+        end_time = asyncio.get_event_loop().time() + timeout
+        while asyncio.get_event_loop().time() < end_time:
+            try:
+                if printer.get_state() != "UNKNOWN" and printer.get_bed_temperature() is not None:
+                    return True
+            except Exception:
+                pass
+            await asyncio.sleep(0.5)
+        logger.error("Printer Values Not Available Yet")
+        return False
 
     async def connect_to_printer(
     self,
@@ -91,6 +106,10 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
                 return None
             
+            if not await self.wait_for_printer_ready(printer):
+                logger.error("Printer values never became available")
+                return None
+            
             logger.info(f"Connected to `{printer_name}` with status `{status}`.")
 
             if not await light_printer_check(printer = printer):
@@ -106,11 +125,11 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         
 
     @commands.hybrid_command(name="connect", description="Connect to a 3D Printer")
-    async def connect(self, ctx: commands.Context, name: str, ip: str, access_code: str, serial: str):
+    async def connect(self, ctx: commands.Context, name: str, ip: str,serial: str, access_code: str):
         await ctx.defer(ephemeral=True)
 
         # Continue as usual...
-        if not await self._validate_ip(ctx, ip):
+        if not await self._validate_ip(ip):
             logger.error(f" Invalid IP address: `{ip}`.")
             return
 
@@ -118,7 +137,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
         printer_data = PrinterCredentials(ip=ip, access_code= access_code, serial= serial)
 
-        printer = await self.connect_to_printer(ctx, name=name, printer_data= printer_data)
+        printer = await self.connect_to_printer(printer_name=name, printer_data= printer_data)
 
         if printer is not None:
             try:
@@ -129,7 +148,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             finally:
                 await asyncio.to_thread(printer.disconnect)
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=15)
     async def monitor_printers(self):
         if not self.connected_printers:
             logger.debug("No printers in the list")
@@ -143,34 +162,44 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             return
 
         for printer_name, printer_data in self.connected_printers.items():
-            printer_credentials = get_printer_data_dict(printer_data=printer_data)
-            printer = await self.connect_to_printer(
+            printer = self.connected_printer_objects.get(printer_name)
+
+            if printer is None or not printer.mqtt_client.is_connected():
+                logger.warning(f"Printer {printer_name} is disconnected. Reconnecting...")
+                printer_object = await self.connect_to_printer(
                 printer_name=printer_name,
-                printer_data=printer_credentials
-            )
-            if printer is None:
-                logger.info(f"Skip status check for printer {printer_name}")
-                continue
-            logging.info(f"Successfully connected to a printer with name: {printer_name}")
+                printer_data=get_printer_data_dict(printer_data=printer_data)
+                )
+                if printer_object is None:
+                    logger.error(f"Failed to reconnect printer `{printer_name}`.")
+                    continue
+                self.connected_printer_objects[printer_name] = printer_object
+                logger.info(f"Reconnected to printer `{printer_name}`.") 
+            
+            printer = self.connected_printer_objects[printer_name]
 
-            printer_current_state = printer.get_state()
-            previous_state = self.previous_state_dict.get(printer_name)
-            logger.info(f"Current state: {printer_name} is {printer_current_state}")
-            logging.info(f"previous state: {previous_state}")
-
-            if printer_current_state in (GcodeState.RUNNING, GcodeState.FINISH, GcodeState.FAILED):
-                if previous_state != printer_current_state:
-                    await embed_printer_info(
-                        printer_object=printer,
-                        printer_name=printer_name,
-                        set_image_callback=lambda: set_image_custom_credentials_callback(
+            try:
+                printer_current_state = printer.get_state()
+                previous_state = self.previous_state_dict.get(printer_name)
+                logger.info(f"Current state: {printer_name} is {printer_current_state}")
+                logging.info(f"previous state: {previous_state}")
+                
+                if printer_current_state in (GcodeState.RUNNING, GcodeState.FINISH, GcodeState.FAILED):
+                    if previous_state != printer_current_state:
+                        await embed_printer_info(
+                            printer_object=printer,
                             printer_name=printer_name,
-                            printer_object=printer
-                        ),
-                        status_channel=status_channel
-                    )
-                    self.previous_state_dict[printer_name] = printer_current_state
-            printer.disconnect()
+                            set_image_callback=lambda: set_image_custom_credentials_callback(
+                                printer_name=printer_name,
+                                printer_object=printer
+                            ),
+                            status_channel=status_channel
+                        )
+                        self.previous_state_dict[printer_name] = printer_current_state
+            except Exception as e:
+                logger.exception(f"Failed to read state for `{printer_name}`. Removing from active list.")
+                await asyncio.to_thread(printer.disconnect)
+                del self.connected_printer_objects[printer_name]
             
 
 async def setup(bot):
