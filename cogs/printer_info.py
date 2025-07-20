@@ -55,12 +55,12 @@ class PrinterInfo(commands.Cog, group_name="pinter_info", group_description="Dis
 
         printer_data = await get_printer_data(ctx = ctx, printer_name = printer_name, printer_utils_cog = printer_utils_cog)
         
-        return await printer_utils_cog.connect_to_printer(ctx = ctx, printer_name = printer_name, printer_data = printer_data)
+        return await printer_utils_cog.connect_to_printer(printer_name = printer_name, printer_data = printer_data)
 
     async def status_show_callback(self, ctx: commands.Context, printer_name: str, printer_utils_cog):
         logger.debug(f"Status for printer: {printer_name}")
 
-        printer_object = await self.connection_check_callback(ctx=ctx, printer_name=printer_name, printer_utils_cog=printer_utils_cog)
+        printer_object = await self.connection_check_callback(ctx=ctx, printer_name=printer_name,                   printer_utils_cog=printer_utils_cog)
         
         if printer_object.get_state() == GcodeState.RUNNING:
             set_image_cb = partial(set_image_custom_credentials_callback, printer_name=printer_name, printer_object=printer_object)

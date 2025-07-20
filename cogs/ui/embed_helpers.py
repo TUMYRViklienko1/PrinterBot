@@ -16,22 +16,23 @@ from ..utils.models import ImageCredentials
 logger = logging.getLogger(__name__)
 
 async def embed_printer_info(
-    status_channel,
     printer_object: bl.Printer,
     printer_name: str,
     set_image_callback: Callable[[], Awaitable[ImageCredentials]],
-    ctx: Optional[commands.Context] = None):     
+    ctx: Optional[commands.Context] = None,
+    status_channel: Optional[discord.abc.GuildChannel] = None):     
 
     image_credentials = await set_image_callback()
     embed = await build_printer_status_embed(
-        status_channel=status_channel,
         printer_object=printer_object,
         printer_name=printer_name,
         image_url=image_credentials.embed_set_image_url,
         ctx=ctx
     )
-
-    await status_channel.send(file=image_credentials.image_main_location, embed=embed)
+    if status_channel is not None:
+        await status_channel.send(file=image_credentials.image_main_location, embed=embed)
+    else:
+        await ctx.send(file=image_credentials.image_main_location, embed=embed)
 
     await delete_image(
         delete_image_callback=image_credentials.delete_image_flag,

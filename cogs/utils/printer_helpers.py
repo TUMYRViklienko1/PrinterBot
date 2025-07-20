@@ -86,3 +86,4 @@ async def light_printer_check(printer:bl.Printer) -> bool:
         return False
     
     return True
+

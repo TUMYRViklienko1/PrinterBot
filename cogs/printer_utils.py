@@ -163,14 +163,14 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                     await embed_printer_info(
                         printer_object=printer,
                         printer_name=printer_name,
-                        set_image_callback=set_image_custom_credentials_callback(
+                        set_image_callback=lambda: set_image_custom_credentials_callback(
                             printer_name=printer_name,
                             printer_object=printer
                         ),
                         status_channel=status_channel
                     )
                     self.previous_state_dict[printer_name] = printer_current_state
-
+            printer.disconnect()
             
 
 async def setup(bot):
