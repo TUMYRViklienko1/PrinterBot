@@ -12,6 +12,7 @@ from typing import Dict, Optional
 import bambulabs_api as bl
 from bambulabs_api import GcodeState
 from discord.ext import commands, tasks
+import discord
 
 from .ui import embed_printer_info
 
@@ -36,7 +37,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.previous_state_dict:   Dict[str, Optional[str]] = dict.fromkeys(self.connected_printers.keys(), "")
         self.connected_printer_objects: Dict[str, Optional[bl.Printer]] = dict.fromkeys(self.connected_printers.keys(), None)
         self.status_channel_id: int = int(CHANEL_ID)
-        self.status_channel = self.bot.get_channel(self.status_channel_id)
+        self.status_channel:Optional[discord.abc.GuildChannel] = None
         self.monitor_printers.start()
     async def _validate_ip(self, ip: str) -> bool:
         try:
@@ -151,14 +152,15 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         if not self.connected_printers:
             logger.debug("No printers in the list")
             return
-
-        try:
-            status_channel = await self.bot.fetch_channel(self.status_channel_id)
-            logging.info("Successfully fetched channel")
-        except Exception as e:
-            logger.error(f"Failed to fetch status channel: {e}")
-            return
-
+        
+        if self.status_channel is None:
+            try:
+                self.status_channel = await self.bot.fetch_channel(self.status_channel_id)
+                logging.info("Successfully fetched channel")
+            except Exception as e:
+                logger.error(f"Failed to fetch status channel: {e}")
+                return
+            
         for printer_name, printer_data in self.connected_printers.items():
             printer = self.connected_printer_objects.get(printer_name)
 
@@ -191,8 +193,10 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                                 printer_name=printer_name,
                                 printer_object=printer
                             ),
-                            status_channel=status_channel
-                        )
+                            status_channel=self.status_channel
+                            )
+                        
+                        logger.info(f"Printer `{printer_name}` state changed: {previous_state} ➜ {printer_current_state}")
                         self.previous_state_dict[printer_name] = printer_current_state
             except Exception as e:
                 logger.exception(f"Failed to read state for `{printer_name}`. Removing from active list.")
