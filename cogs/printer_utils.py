@@ -36,7 +36,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.previous_state_dict:dict = dict.fromkeys(self.connected_printers.keys(), "")
         self.status_channel_id = int(os.getenv("CHANEL_ID"))
         self.status_channel = self.bot.get_channel(self.status_channel_id)
-        self.connected_printer_objects: dict[str, bl.Printer] = {}
+        self.connected_printer_objects: dict[str, bl.Printer]  = dict.fromkeys(self.connected_printers.keys(), None)
 
     async def _validate_ip(self, ip: str) -> bool:
         try:
@@ -125,11 +125,11 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         
 
     @commands.hybrid_command(name="connect", description="Connect to a 3D Printer")
-    async def connect(self, ctx: commands.Context, name: str, ip: str, access_code: str, serial: str):
+    async def connect(self, ctx: commands.Context, name: str, ip: str,serial: str, access_code: str):
         await ctx.defer(ephemeral=True)
 
         # Continue as usual...
-        if not await self._validate_ip(ctx, ip):
+        if not await self._validate_ip(ip):
             logger.error(f" Invalid IP address: `{ip}`.")
             return
 
@@ -137,7 +137,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
         printer_data = PrinterCredentials(ip=ip, access_code= access_code, serial= serial)
 
-        printer = await self.connect_to_printer(ctx, name=name, printer_data= printer_data)
+        printer = await self.connect_to_printer(printer_name=name, printer_data= printer_data)
 
         if printer is not None:
             try:
@@ -170,7 +170,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 printer_name=printer_name,
                 printer_data=get_printer_data_dict(printer_data=printer_data)
                 )
-                if printer is None:
+                if printer_object is None:
                     logger.error(f"Failed to reconnect printer `{printer_name}`.")
                     continue
                 self.connected_printer_objects[printer_name] = printer_object

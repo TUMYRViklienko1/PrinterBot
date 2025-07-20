@@ -33,7 +33,7 @@ async def get_printer_data(
 
     return get_printer_data_dict(printer_data=printer_data)
 
-async def get_camera_frame(printer_object:bl.Printer, printer_name: str):
+async def get_camera_frame(printer_object:bl.Printer, printer_name: str) -> bool:
     try:
         printer_image = printer_object.get_camera_image()
     except Exception as e:
@@ -60,8 +60,12 @@ async def set_image_default_credentials_callback()->ImageCredentials:
     return ImageCredentials()
 
 async def set_image_custom_credentials_callback(printer_name, printer_object) -> ImageCredentials:
-    await get_camera_frame(printer_object=printer_object, printer_name=printer_name)
-    return ImageCredentials(image_filename=f"camera_frame_{printer_name}.png", delete_image_flag=True)
+    image_filename = "camera_frame_.png"
+    delete_image_flag = False
+    if await get_camera_frame(printer_object=printer_object, printer_name=printer_name):
+        image_filename = f"camera_frame_{printer_name}.png"
+        delete_image_flag = True
+    return ImageCredentials(image_filename=image_filename, delete_image_flag=delete_image_flag)
 
 async def finish_time_format(remaining_time)->str:
     if remaining_time is not None:
