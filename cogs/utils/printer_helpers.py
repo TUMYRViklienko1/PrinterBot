@@ -7,30 +7,35 @@ from typing import Optional
 import asyncio
 
 from .models import PrinterCredentials
+from .models import ImageCredentials
 
 logger = logging.getLogger(__name__)
 
+def get_printer_data_dict(printer_data:dict):
+    return PrinterCredentials(
+    ip=printer_data["ip"],
+    access_code=printer_data["access_code"],
+    serial=printer_data["serial"]
+    )   
+ 
+
 async def get_printer_data(
     ctx: commands.Context, 
-    name_of_printer: str, 
+    printer_name: str, 
     printer_utils_cog
 ) -> Optional[PrinterCredentials]:
     
-    printer_info = printer_utils_cog.connected_printers.get(name_of_printer)
+    printer_data = printer_utils_cog.connected_printers.get(printer_name)
 
-    if printer_info is None:
-        logger.error(f"Printer '{name_of_printer}' not found.")
+    if printer_data is None:
+        logger.error(f"Printer '{printer_name}' not found.")
         return
 
-    return PrinterCredentials(
-        ip=printer_info["ip"],
-        access_code=printer_info["access_code"],
-        serial=printer_info["serial"]
-    )
+    return get_printer_data_dict(printer_data=printer_data)
 
-async def get_camera_frame(printer_object:bl.Printer, name_of_printer: str):
+async def get_camera_frame(printer_object:bl.Printer, printer_name: str):
     printer_image = printer_object.get_camera_image()
-    printer_image.save(f"img/camera_frame_{name_of_printer}.png")
+    printer_image.save(f"img/camera_frame_{printer_name}.png")
 
 async def get_cog(ctx: commands.Context, bot, name_of_cog: str)  -> Optional[bl.Printer]:
     printer_cog = bot.get_cog(name_of_cog)
@@ -45,7 +50,14 @@ async def printer_error_handler(printer_object)->str:
         return "No errors."
     else:
         return f"Printer Error Code: {printer_error_code}"
-    
+
+async def set_image_default_credentials_callback()->ImageCredentials:
+    return ImageCredentials()
+
+async def set_image_custom_credentials_callback(printer_name, printer_object) -> ImageCredentials:
+    await get_camera_frame(printer_object=printer_object, printer_name=printer_name)
+    return ImageCredentials(image_filename=f"camera_frame_{printer_name}.png", delete_image_flag=True)
+
 async def finish_time_format(remaining_time)->str:
     if remaining_time is not None:
         finish_time = datetime.datetime.now() + datetime.timedelta(
@@ -54,7 +66,7 @@ async def finish_time_format(remaining_time)->str:
     else:
         return "NA"
     
-async def light_printer_check(ctx: commands.Context, printer:bl.Printer) -> bool:
+async def light_printer_check(printer:bl.Printer) -> bool:
     def check_light(action_func, action_name):
         if action_func():
             logger.debug(f"Light {action_name} successfully.")
@@ -74,3 +86,4 @@ async def light_printer_check(ctx: commands.Context, printer:bl.Printer) -> bool
         return False
     
     return True
+

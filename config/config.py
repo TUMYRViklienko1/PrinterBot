@@ -23,7 +23,7 @@ DEBUG_LEVEL = getattr(logging, debug_level_str, logging.ERROR)
 
 # Configure logging
 logging.basicConfig(
-    level=DEBUG_LEVEL,
+    level=logging.INFO,
     filename="log/bot.log",
     filemode="w",
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
