@@ -41,7 +41,8 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         try:
             ipaddress.ip_address(ip)
         except ValueError:
-            await self.status_channel.send(f"❌ Invalid IP address: `{ip}`.")
+            logging.error(f"Invalid IP address: `{ip}`.")
+            # await self.status_channel.send(f"❌ Invalid IP address: `{ip}`.")
             return False
         return True
             
@@ -56,7 +57,8 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 return True
             await asyncio.sleep(0.3)
 
-        await self.status_channel.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
+        logging.error(f"Could not connect to `{printer_name}` via MQTT.")
+        # await self.status_channel.send(f"❌ Could not connect to `{printer_name}` via MQTT.")
         await asyncio.to_thread(printer.disconnect)
         return False
 
@@ -67,7 +69,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                 return status
             await asyncio.sleep(0.3)
 
-        await self.status_channel.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
+        # await self.status_channel.send(f"⚠️ Connected to `{printer_name}`, but status is UNKNOWN.")
         logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
         return None
 

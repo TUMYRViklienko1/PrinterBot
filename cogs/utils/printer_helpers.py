@@ -34,8 +34,13 @@ async def get_printer_data(
     return get_printer_data_dict(printer_data=printer_data)
 
 async def get_camera_frame(printer_object:bl.Printer, printer_name: str):
-    printer_image = printer_object.get_camera_image()
+    try:
+        printer_image = printer_object.get_camera_image()
+    except Exception as e:
+        logging.warning(f"Printer: {printer_name}. Can't take a frame")
+        return False
     printer_image.save(f"img/camera_frame_{printer_name}.png")
+    return True
 
 async def get_cog(ctx: commands.Context, bot, name_of_cog: str)  -> Optional[bl.Printer]:
     printer_cog = bot.get_cog(name_of_cog)
