@@ -33,7 +33,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         self.connected_printers:dict = self.storage.load()
         self.monitor_printers.start()
         self.ctx = commands.Context
-        self.previous_state_dict:dict = {}
+        self.previous_state_dict:dict = dict.fromkeys(self.connected_printers.keys(), "")
         self.status_channel_id = int(os.getenv("CHANEL_ID"))
         self.status_channel = self.bot.get_channel(self.status_channel_id)
 
@@ -137,11 +137,10 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
         try:
             status_channel = await self.bot.fetch_channel(self.status_channel_id)
+            logging.info("Successfully fetched channel")
         except Exception as e:
             logger.error(f"Failed to fetch status channel: {e}")
             return
-
-        await status_channel.send("❌ Invalid IP address.")
 
         for printer_name, printer_data in self.connected_printers.items():
             printer_credentials = get_printer_data_dict(printer_data=printer_data)
@@ -152,9 +151,12 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             if printer is None:
                 logger.info(f"Skip status check for printer {printer_name}")
                 continue
+            logging.info(f"Successfully connected to a printer with name: {printer_name}")
 
             printer_current_state = printer.get_state()
             previous_state = self.previous_state_dict.get(printer_name)
+            logger.info(f"Current state: {printer_name} is {printer_current_state}")
+            logging.info(f"previous state: {previous_state}")
 
             if printer_current_state in (GcodeState.RUNNING, GcodeState.FINISH, GcodeState.FAILED):
                 if previous_state != printer_current_state:
@@ -168,7 +170,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
                         status_channel=status_channel
                     )
                     self.previous_state_dict[printer_name] = printer_current_state
-                
+
             
 
 async def setup(bot):
