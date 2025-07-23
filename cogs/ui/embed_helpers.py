@@ -52,7 +52,7 @@ async def build_printer_status_embed(
         color=0x7309de
     )
 
-    if ctx  is not None
+    if ctx  is not None:
         embed.set_author(
             name=ctx.author.display_name,
             icon_url=ctx.author.avatar.url
