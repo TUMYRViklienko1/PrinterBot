@@ -1,11 +1,9 @@
 # cogs/printer.py
 
 import asyncio
-import json
 import logging
 import os
 import ipaddress
-from pathlib import Path
 from dataclasses import asdict
 from typing import Dict, Optional
 
@@ -19,7 +17,6 @@ from .ui import embed_printer_info
 from .utils import PrinterCredentials
 from .utils import PrinterStorage
 from .utils import light_printer_check
-from .utils import get_cog
 from .utils import set_image_custom_credentials_callback
 from .utils import get_printer_data_dict
 from .utils import backoff_checker
@@ -43,7 +40,7 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
         try:
             ipaddress.ip_address(ip)
         except ValueError:
-            logging.error(f"Invalid IP address: `{ip}`.")
+            logging.error("Invalid IP address: %s", ip)
             return False
         return True
             
@@ -96,27 +93,25 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
             printer = self._create_printer(printer_data = printer_data)
 
             if await self._connect_mqtt(printer=printer, printer_name=printer_name) is False:
-                logger.error(f"Could not connect to `{printer_name}` via MQTT.")
+                logger.error("Could not connect to `%s` via MQTT.", printer_name)
                 return None
 
             status = await self._check_printer_status(printer=printer, printer_name=printer_name) 
 
             if status is None:
-                logger.warning(f"Connected to `{printer_name}`, but status is UNKNOWN.")
-                return None
-            
+                logger.warning("Connected to `%s`, but status is UNKNOWN.", printer_name)
+                return None         
             if not await self.wait_for_printer_ready(printer):
                 logger.error("Printer values never became available")
                 return None
-            
-            logger.info(f"Connected to `{printer_name}` with status `{status}`.")
+            logger.info("Connected to `%s` with status `%s`.", printer_name, status)
 
             if not await light_printer_check(printer = printer):
                 logger.error("return none in the light_printer_check")
                 return None
 
             return printer
-        
+    
         except Exception as e:
             logger.exception("Unhandled exception during connect")
             return None
@@ -129,10 +124,10 @@ class PrinterUtils(commands.GroupCog, group_name="printer_utils", group_descript
 
         # Continue as usual...
         if not await self._validate_ip(ip):
-            logger.error(f" Invalid IP address: `{ip}`.")
+            logger.error("Invalid IP address: `%s`.", ip)
             return
 
-        logger.info(f"Attempting connection to printer: {name}")
+        logger.info("Attempting connection to printer: `%s`", name)
 
         printer_data = PrinterCredentials(ip=ip, access_code= access_code, serial= serial)
 

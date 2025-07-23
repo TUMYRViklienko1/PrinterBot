@@ -48,19 +48,15 @@ async def build_printer_status_embed(
 
     embed = discord.Embed(
         title=f"Name: {printer_name}",
-        description="Status of the printer:",
+        description=f"Status of the printer: {printer_object.get_state()}",
         color=0x7309de
     )
 
-    # Add author info only if ctx is provided (e.g., during a command)
-    if ctx and ctx.author:
-        try:
-            embed.set_author(
-                name=ctx.author.display_name,
-                icon_url=ctx.author.avatar.url
-            )
-        except Exception:
-            pass  # Fail silently if avatar or other info is missing
+    if ctx  is not None
+        embed.set_author(
+            name=ctx.author.display_name,
+            icon_url=ctx.author.avatar.url
+        )
 
     embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
 
@@ -130,9 +126,9 @@ async def delete_image(delete_image_callback: bool, image_filename: str) -> bool
     if delete_image_callback:
         try: 
             os.remove(f"img/{image_filename}")
-            logger.debug(f"File '{image_filename}' deleted successfully.")
+            logger.debug("File '%s' deleted successfully.", image_filename)
             return True
         
         except FileNotFoundError: 
-            logger.exception(f"File '{image_filename}' not found.")
+            logger.exception("File '%s' not found.", image_filename)
             return False
