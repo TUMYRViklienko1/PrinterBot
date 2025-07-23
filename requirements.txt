@@ -1,3 +1,4 @@
+pylint>=3.3.7
 bambulabs-api>=2.6.3
 python-dotenv>=1.1.0
 discord.py>=2.5.2
