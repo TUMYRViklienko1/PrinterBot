@@ -1,3 +1,8 @@
-config/
-venv/
+data/
+.venv/
+log/
 .env
+.vscode
+
+**/__pycache__/
+cogs/__pycache__

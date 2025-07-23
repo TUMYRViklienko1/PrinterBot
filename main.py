@@ -1,47 +1,42 @@
-import os
 import asyncio
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
+from config.config import DISCORD_TOKEN 
 
-# Load environment variables
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
+import logging
 
-# Configure bot intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-# Initialize the bot
+logger = logging.getLogger(__name__)
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Event: on_ready
 @bot.event
 async def on_ready():
     await bot.change_presence(
         status=discord.Status.do_not_disturb,
-        activity=discord.Activity(
-            type=discord.ActivityType.listening,
-            name='tessst'
-        )
+        activity=discord.Activity(type=discord.ActivityType.listening, name='tessst')
     )
-    print("The bot is ready!")
-    print("-" * 20)
+    logger.info("Bot is ready!")
 
-# Load all cogs from the cogs directory
+@bot.command()
+async def sync(ctx):
+    synced = await bot.tree.sync()
+    logger.info(f"Synced {len(synced)} command(s).")
+
 async def load_cogs():
-    cogs_dir = './cogs'
-    for filename in os.listdir(cogs_dir):
-        if filename.endswith('.py'):
-            cog_name = filename[:-3]
-            await bot.load_extension(f'cogs.{cog_name}')
+    import os
 
-# Entry point
+    for filename in os.listdir('./cogs'):
+        if filename.endswith('.py'):
+            await bot.load_extension(f'cogs.{filename[:-3]}')
+
 async def main():
     async with bot:
         await load_cogs()
-        await bot.start(TOKEN)
+        await bot.start(DISCORD_TOKEN)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
