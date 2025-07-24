@@ -62,10 +62,9 @@ class PrinterInfo(commands.Cog):
         if printer is not None:
             await ctx.send(f"Successfully connected to the printer: '{printer_name}'")
             return printer
-        else:
-            await ctx.send(f"❌ Can't connect to a printer: '{printer_name}'")
-            return None
-      
+        await ctx.send(f"❌ Can't connect to a printer: '{printer_name}'")
+        return None
+
     async def status_show_callback(self,ctx: commands.Context,printer_name: str,printer_utils_cog):
         """Display printer status information."""
         logger.debug("Status for printer: %s", printer_name)
@@ -77,7 +76,7 @@ class PrinterInfo(commands.Cog):
         )
         if printer_object is None:
             return
-    
+
         if printer_object.get_state() == GcodeState.RUNNING:
             set_image_cb = partial(
                 set_image_custom_credentials_callback,

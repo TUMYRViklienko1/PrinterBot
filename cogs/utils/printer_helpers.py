@@ -35,7 +35,7 @@ async def get_camera_frame(printer_object: bl.Printer, printer_name: str) -> boo
     """Attempts to get a camera frame and save it to file."""
     try:
         printer_image = printer_object.get_camera_image()
-    except Exception:  # noqa  # pylint: disable=broad-exception-raised
+    except Exception: # pylint: disable=broad-exception-caught
         logger.warning("Printer: %s. Can't take a frame", printer_name)
         return False
 
@@ -117,7 +117,7 @@ async def backoff_checker(
     max_attempts: int = 5,
     exponential: int = 2,
     success_condition=bool
-) -> Optional[any]:
+) -> Optional[any]:   # pylint: disable=too-many-arguments
     """Performs an action with exponential backoff if it fails."""
     for attempt in range(1, max_attempts + 1):
         result = action_func_callback()
