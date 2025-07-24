@@ -1,8 +1,7 @@
 import asyncio
 import discord
 from discord.ext import commands
-from config.config import DISCORD_TOKEN 
-
+from config.config import DISCORD_TOKEN
 import logging
 
 intents = discord.Intents.default()
@@ -22,7 +21,7 @@ async def on_ready():
     logger.info("Bot is ready!")
 
 @bot.command()
-async def sync(ctx):
+async def sync():
     synced = await bot.tree.sync()
     logger.info(f"Synced {len(synced)} command(s).")
 

@@ -1,3 +1,5 @@
+"""Init file to import function from helper packages"""
+
 from .printer_menu import MenuView
 
 from .embed_helpers import embed_printer_info

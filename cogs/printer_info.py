@@ -56,7 +56,7 @@ class PrinterInfo(commands.Cog):
 
         printer_data = await get_printer_data(ctx=ctx,
                                               printer_name=printer_name,
-                                              printer_utils_cog=printer_utils_cog) 
+                                              printer_utils_cog=printer_utils_cog)
         return await printer_utils_cog.connect_to_printer(printer_name=printer_name,
                                                           printer_data=printer_data)
     async def status_show_callback(self,ctx: commands.Context,printer_name: str,printer_utils_cog):
