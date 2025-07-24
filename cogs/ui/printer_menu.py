@@ -1,7 +1,8 @@
+
 import discord
 from discord.ext import commands
 
-from ..utils import MenuCallBack
+from cogs.utils import MenuCallBack
 
 class Menu(discord.ui.Select):
     def __init__(self, ctx:commands.Context, printer_utils_cog, parent_cog, callback_status: int):
@@ -31,9 +32,13 @@ class Menu(discord.ui.Select):
         await interaction.response.defer(ephemeral=True)
 
         if self.callback_status == MenuCallBack.CALLBACK_STATUS_SHOW:
-            await self.parent_cog.status_show_callback(self.ctx, self.values[0], self.printer_utils_cog)
+            await self.parent_cog.status_show_callback(ctx = self.ctx,
+                                                       printer_name = self.values[0],
+                                                       printer_utils_cog = self.printer_utils_cog)
         elif self.callback_status == MenuCallBack.CALLBACK_CONNECTION_CHECK:
-            await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
+            await self.parent_cog.connection_check_callback(ctx = self.ctx,
+                                                            printer_name = self.values[0],
+                                                            printer_utils_cog = self.printer_utils_cog)
 
 class MenuView(discord.ui.View):
     def __init__(self, printer_utils_cog, parent_cog, ctx:commands.Context, callback_status: int):

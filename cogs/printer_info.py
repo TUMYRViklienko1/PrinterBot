@@ -1,6 +1,7 @@
 """Cog for displaying printer information in a Discord bot."""
 
 from functools import partial
+from typing import Optional
 
 import logging
 import discord
@@ -43,7 +44,7 @@ class PrinterInfo(commands.Cog):
 
     async def _get_printer_utils_cog(self, ctx: commands.Context):
         """Get the PrinterUtils cog."""
-        cog = await get_cog(ctx, self.bot, "PrinterUtils")
+        cog = await get_cog(self.bot, "PrinterUtils")
         if cog is None:
             await ctx.send("❌ Can't load cog with name: PrinterUtils")
         return cog
@@ -51,14 +52,20 @@ class PrinterInfo(commands.Cog):
     async def connection_check_callback(self,
                                         ctx: commands.Context,
                                         printer_name: str,
-                                        printer_utils_cog) -> bl.Printer:
+                                        printer_utils_cog) -> Optional[bl.Printer]:
         """Ensure a valid connection to the printer."""
 
-        printer_data = await get_printer_data(ctx=ctx,
-                                              printer_name=printer_name,
+        printer_data = await get_printer_data(printer_name=printer_name,
                                               printer_utils_cog=printer_utils_cog)
-        return await printer_utils_cog.connect_to_printer(printer_name=printer_name,
+        printer = await printer_utils_cog.connect_to_printer(printer_name=printer_name,
                                                           printer_data=printer_data)
+        if printer is not None:
+            await ctx.send(f"Successfully connected to the printer: '{printer_name}'")
+            return printer
+        else:
+            await ctx.send(f"❌ Can't connect to a printer: '{printer_name}'")
+            return None
+      
     async def status_show_callback(self,ctx: commands.Context,printer_name: str,printer_utils_cog):
         """Display printer status information."""
         logger.debug("Status for printer: %s", printer_name)
@@ -68,7 +75,9 @@ class PrinterInfo(commands.Cog):
             printer_name=printer_name,
             printer_utils_cog=printer_utils_cog
         )
-
+        if printer_object is None:
+            return
+    
         if printer_object.get_state() == GcodeState.RUNNING:
             set_image_cb = partial(
                 set_image_custom_credentials_callback,
