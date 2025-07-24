@@ -1,4 +1,4 @@
-"""Init file to import function from helper packages"""
+"""Init file to import function from UI packages"""
 
 from .printer_menu import MenuView
 
