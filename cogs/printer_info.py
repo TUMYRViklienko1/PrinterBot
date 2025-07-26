@@ -95,10 +95,6 @@ class PrinterInfo(commands.Cog):
             set_image_callback=set_image_cb
         )
 
-        printer_buttons_controller = PrinterControlView(printer=printer_object,
-                                                        printer_name=printer_name)
-        await ctx.send(view=printer_buttons_controller)
-
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):
         """Hybrid command to display the printer status."""

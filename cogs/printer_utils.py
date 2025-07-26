@@ -199,7 +199,7 @@ class PrinterUtils(commands.GroupCog,
                 logger.info("Reconnected to printer `%s`.", printer_name)
 
             printer = self.connected_printer_objects[printer_name]
-            printer_current_state = self._check_printer_status(printer= printer,
+            printer_current_state = await self._check_printer_status(printer= printer,
                                                                printer_name= printer_name)
             if printer_current_state is not None:
                 previous_state = self.previous_state_dict.get(printer_name)
