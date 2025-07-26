@@ -4,7 +4,11 @@
 Discord UI View for controlling a Bambu Labs printer via buttons.
 """
 
+import asyncio
+
 import bambulabs_api as bl
+from bambulabs_api import GcodeState
+
 import discord
 
 
@@ -43,12 +47,17 @@ class PrinterControlView(discord.ui.View):
         """
         await interaction.response.defer()
 
-        success = self.printer.pause_print() if self.printer else False
-        message = (
-            f"✅ '{self.printer_name}' was paused successfully"
-            if success else
-            f"❌ Failed to pause '{self.printer_name}'"
-        )
+        initial_state = self.printer.get_current_state()
+
+        success = self.printer.pause_print()
+        await asyncio.sleep(1.5)  # Wait a moment for state to change
+        new_state = self.printer.get_current_state()
+
+        if success and new_state == GcodeState.PAUSE:
+            message = f"✅ '{self.printer_name}' was paused successfully"
+        else:
+            message = f"❌ Failed to pause '{self.printer_name}'"
+
         await interaction.followup.send(message)
 
     @discord.ui.button(
