@@ -12,8 +12,10 @@ from bambulabs_api import GcodeState
 
 from .ui import (
     MenuView,
-    embed_printer_info
+    embed_printer_info,
+    PrinterControlView
 )
+
 from .utils import (
     MenuCallBack,
     get_printer_data,
@@ -92,6 +94,10 @@ class PrinterInfo(commands.Cog):
             printer_name=printer_name,
             set_image_callback=set_image_cb
         )
+
+        printer_buttons_controller = PrinterControlView(printer=printer_object,
+                                                        printer_name=printer_name)
+        await ctx.send(view=printer_buttons_controller)
 
     @commands.hybrid_command(name="status", description="Display status of the printer")
     async def status(self, ctx: commands.Context):

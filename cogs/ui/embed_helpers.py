@@ -132,7 +132,7 @@ async def build_printer_status_embed(
     )
 
     embed.set_image(url=image_url)
-
+    
     return embed
 
 

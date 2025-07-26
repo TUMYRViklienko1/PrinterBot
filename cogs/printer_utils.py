@@ -14,6 +14,7 @@ import bambulabs_api as bl
 from bambulabs_api import GcodeState
 
 from .ui import embed_printer_info
+
 from .utils import (
     PrinterCredentials,
     PrinterStorage,
