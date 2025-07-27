@@ -5,7 +5,7 @@ import datetime
 import logging
 import asyncio
 import math
-from typing import Optional, Dict
+from typing import Optional, Dict, Any, Callable
 
 import bambulabs_api as bl
 
@@ -44,7 +44,7 @@ async def get_camera_frame(printer_object: bl.Printer, printer_name: str) -> boo
     return True
 
 
-async def get_cog(bot, name_of_cog: str) -> Optional[bl.Printer]:
+async def get_cog(bot, name_of_cog: str) -> Optional[Any]:
     """Retrieves a bot cog by name."""
     printer_cog = bot.get_cog(name_of_cog)
     if not printer_cog:
@@ -112,13 +112,13 @@ async def light_printer_check(printer: bl.Printer) -> bool:
 
 
 async def backoff_checker(
-    action_func_callback,
+    action_func_callback: Callable[[], Any],
     action_name: str,
     interval: float = 0.3,
     max_attempts: int = 5,
     exponential: int = 2,
-    success_condition=bool
-) -> Optional[any]:   # pylint: disable=too-many-arguments
+    success_condition: Callable[[Any], bool] = bool
+) -> Optional[Any]:   # pylint: disable=too-many-arguments
     """Performs an action with exponential backoff if it fails."""
     for attempt in range(1, max_attempts + 1):
         result = action_func_callback()

@@ -20,8 +20,8 @@ async def embed_printer_info(
     printer_object: bl.Printer,
     printer_name: str,
     set_image_callback: Callable[[], Awaitable[ImageCredentials]],
-    ctx: Optional[commands.Context] = None,
-    status_channel: Optional[discord.abc.GuildChannel] = None
+    ctx: Optional[commands.Context[commands.Bot]] = None,
+    status_channel: Optional[discord.TextChannel] = None
 ):
     """Sends a Discord embed with printer info and an image attachment."""
 
@@ -41,7 +41,7 @@ async def embed_printer_info(
             embed=embed
         )
         await status_channel.send(view = printer_buttons_controller)
-    else:
+    if ctx is not None:
         await ctx.send(
             file=image_credentials.image_main_location,
             embed=embed
@@ -58,7 +58,7 @@ async def build_printer_status_embed(
     printer_object: bl.Printer,
     printer_name: str,
     image_url: str,
-    ctx: Optional[commands.Context] = None
+    ctx: Optional[commands.Context[commands.Bot]] = None
 ) -> discord.Embed:
     """Builds a Discord embed displaying detailed printer status."""
 
@@ -71,8 +71,8 @@ async def build_printer_status_embed(
     if ctx is not None:
         embed.set_author(
             name=ctx.author.display_name,
-            icon_url=ctx.author.avatar.url
-        )
+            icon_url=ctx.author.display_avatar.url
+        )   
 
     embed.set_thumbnail(
         url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg"

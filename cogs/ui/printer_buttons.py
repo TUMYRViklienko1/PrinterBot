@@ -7,7 +7,7 @@ Discord UI View for controlling a Bambu Labs printer via buttons.
 import asyncio
 
 import bambulabs_api as bl
-from bambulabs_api import GcodeState
+from bambulabs_api.states_info import GcodeState
 
 import discord
 
@@ -41,7 +41,10 @@ class PrinterControlView(discord.ui.View):
         label="Pause",
         custom_id="pause_button",
     )
-    async def pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def pause_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button["PrinterControlView"]):
         """
         Pause the current print job on the printer.
         """
@@ -65,7 +68,10 @@ class PrinterControlView(discord.ui.View):
         label="Resume",
         custom_id="resume_button",
     )
-    async def resume_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def resume_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button["PrinterControlView"]):
         """
         Resume the current paused print job on the printer.
         """
@@ -85,7 +91,10 @@ class PrinterControlView(discord.ui.View):
         label="Stop",
         custom_id="stop_button",
     )
-    async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def stop_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button["PrinterControlView"]):
         """
         Stop the current print job on the printer.
         """
@@ -105,7 +114,10 @@ class PrinterControlView(discord.ui.View):
         label="Light",
         custom_id="light_button",
     )
-    async def light_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def light_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button["PrinterControlView"]):
         """
         Toggle the printer's light on or off.
         """
