@@ -6,3 +6,12 @@ log/
 
 **/__pycache__/
 cogs/__pycache__
+
+# Python packaging
+*.egg-info/
+
+#mypy cache
+*.mypy_cache
+
+#petest_cache
+*.pytest_chache
