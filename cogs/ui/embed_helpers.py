@@ -11,6 +11,8 @@ import bambulabs_api as bl
 from cogs.utils.printer_helpers import finish_time_format, printer_error_handler
 from cogs.utils.models import ImageCredentials
 
+from .printer_buttons import PrinterControlView
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,16 +33,20 @@ async def embed_printer_info(
         ctx=ctx
     )
 
+    printer_buttons_controller = PrinterControlView(printer=printer_object,
+                                                    printer_name=printer_name)
     if status_channel is not None:
         await status_channel.send(
             file=image_credentials.image_main_location,
             embed=embed
         )
+        await status_channel.send(view = printer_buttons_controller)
     else:
         await ctx.send(
             file=image_credentials.image_main_location,
             embed=embed
         )
+        await ctx.send(view=printer_buttons_controller)
 
     await delete_image(
         delete_image_callback=image_credentials.delete_image_flag,

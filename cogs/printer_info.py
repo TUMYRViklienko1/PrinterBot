@@ -12,8 +12,9 @@ from bambulabs_api import GcodeState
 
 from .ui import (
     MenuView,
-    embed_printer_info
+    embed_printer_info,
 )
+
 from .utils import (
     MenuCallBack,
     get_printer_data,
