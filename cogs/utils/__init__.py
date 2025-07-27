@@ -1,5 +1,3 @@
-"""Init file to import function from helper packages"""
-
 from .enums import MenuCallBack
 
 from .printer_helpers import get_printer_data
