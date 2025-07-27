@@ -45,13 +45,11 @@ class PrinterControlView(discord.ui.View):
         """
         Pause the current print job on the printer.
         """
-        await interaction.response.defer()
 
-        initial_state = self.printer.get_current_state()
+        await interaction.response.defer()
 
         success = self.printer.pause_print()
         await asyncio.sleep(1.5)  # Wait a moment for state to change
-        new_state = self.printer.get_current_state()
 
         if success and new_state == GcodeState.PAUSE:
             message = f"✅ '{self.printer_name}' was paused successfully"
