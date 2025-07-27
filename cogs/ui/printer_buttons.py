@@ -1,14 +1,30 @@
+# pylint: disable=unused-argument
+
+"""
+Discord UI View for controlling a Bambu Labs printer via buttons.
+"""
+
 import bambulabs_api as bl
 import discord
 
+
 class PrinterControlView(discord.ui.View):
+    """
+    A Discord UI View that provides printer control buttons for a Bambu Labs printer.
+    
+    Controls are automatically disabled if the printer is unavailable.
+    """
+
     def __init__(self, printer: bl.Printer, printer_name: str):
+        """
+        Initialize the printer control view.
+        """
         super().__init__()
         self.printer = printer
         self.printer_name = printer_name
         self.disable_controls = printer is None
 
-        # Dynamically disable controls if printer is unavailable
+        # Dynamically disable certain buttons if the printer is unavailable
         for child in self.children:
             if isinstance(child, discord.ui.Button) and child.custom_id in {
                 "pause_button", "resume_button", "stop_button", "light_button"
@@ -22,6 +38,9 @@ class PrinterControlView(discord.ui.View):
         custom_id="pause_button",
     )
     async def pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """
+        Pause the current print job on the printer.
+        """
         await interaction.response.defer()
 
         success = self.printer.pause_print() if self.printer else False
@@ -39,6 +58,9 @@ class PrinterControlView(discord.ui.View):
         custom_id="resume_button",
     )
     async def resume_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """
+        Resume the current paused print job on the printer.
+        """
         await interaction.response.defer()
 
         success = self.printer.resume_print() if self.printer else False
@@ -56,6 +78,9 @@ class PrinterControlView(discord.ui.View):
         custom_id="stop_button",
     )
     async def stop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """
+        Stop the current print job on the printer.
+        """
         await interaction.response.defer()
 
         success = self.printer.stop_print() if self.printer else False
@@ -73,6 +98,9 @@ class PrinterControlView(discord.ui.View):
         custom_id="light_button",
     )
     async def light_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """
+        Toggle the printer's light on or off.
+        """
         await interaction.response.defer()
 
         light_state = self.printer.get_light_state() if self.printer else None

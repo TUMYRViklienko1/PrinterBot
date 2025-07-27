@@ -32,7 +32,7 @@ async def embed_printer_info(
         image_url=image_credentials.embed_set_image_url,
         ctx=ctx
     )
-    
+
     printer_buttons_controller = PrinterControlView(printer=printer_object,
                                                     printer_name=printer_name)
     if status_channel is not None:
@@ -138,7 +138,7 @@ async def build_printer_status_embed(
     )
 
     embed.set_image(url=image_url)
-    
+
     return embed
 
 
