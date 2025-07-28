@@ -14,4 +14,10 @@ cogs/__pycache__
 *.mypy_cache
 
 #petest_cache
-*.pytest_chache
+*.pytest_cache
+
+#.tox env
+*.tox
+*.coverage
+
+tree.txt
