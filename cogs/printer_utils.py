@@ -11,11 +11,11 @@ from typing import Dict, Optional
 import discord
 from discord.ext import commands, tasks
 import bambulabs_api as bl
-from bambulabs_api import GcodeState
+from bambulabs_api.states_info import GcodeState
 
-from .ui import embed_printer_info
+from .ui.embed_helpers import embed_printer_info
 
-from .utils import (
+from .utils import ( # type: ignore[attr-defined]
     PrinterCredentials,
     PrinterStorage,
     light_printer_check,
@@ -43,8 +43,10 @@ class PrinterUtils(commands.GroupCog,
         self.connected_printer_objects: Dict[str, Optional[bl.Printer]] = dict.fromkeys(
             self.connected_printers.keys(), None
         )
-        self.status_channel_id: int = int(CHANEL_ID)
-        self.status_channel: Optional[discord.abc.GuildChannel] = None
+        if CHANEL_ID is None:
+            raise ValueError("CHANEL_ID environment variable not set")
+        self.status_channel_id = int(CHANEL_ID)
+        self.status_channel: Optional[discord.TextChannel] = None
         self.monitor_printers.start()
 
     async def _validate_ip(self, ip: str) -> bool:
@@ -94,7 +96,7 @@ class PrinterUtils(commands.GroupCog,
             await asyncio.sleep(0.5)
         logger.error("Printer Values Not Available Yet")
         return False
-
+    # pylint: disable=too-many-return-statements
     async def connect_to_printer(
         self,
         printer_name: str,
@@ -129,13 +131,16 @@ class PrinterUtils(commands.GroupCog,
             return printer
         except (ConnectionError, TimeoutError) as e:
             logger.error("Connection issue while connecting to printer `%s`: %s", printer_name, e)
+            return None
         except Exception: # pylint: disable=broad-exception-caught
             logger.exception("Unhandled exception during connect")
             return None
 
-    @commands.hybrid_command(name="connect", description="Connect to a 3D Printer")
+    @commands.hybrid_command(  # type: ignore[arg-type]
+        name="connect",
+        description="Connect to a 3D Printer")
     async def connect(self,
-                      ctx: commands.Context,
+                      ctx: commands.Context[commands.Bot],
                       name: str,
                       ip: str,
                       serial: str,
@@ -154,11 +159,11 @@ class PrinterUtils(commands.GroupCog,
 
         if printer is not None:
             try:
-                self.connected_printers[name] = asdict(printer_data)
+                self.connected_printers[name] = asdict(printer_data)  # type: ignore[assignment]
                 self.storage.save(self.connected_printers)
             finally:
                 await asyncio.to_thread(printer.disconnect)
-
+    # pylint: disable=too-many-branches
     @tasks.loop(seconds=15)
     async def monitor_printers(self):
         """Periodically checks printer states and sends updates to Discord."""
@@ -168,7 +173,9 @@ class PrinterUtils(commands.GroupCog,
 
         if self.status_channel is None:
             try:
-                self.status_channel = await self.bot.fetch_channel(self.status_channel_id)
+                self.status_channel = await self.bot.fetch_channel(
+                    self.status_channel_id
+                )  # type: ignore[assignment]
                 logger.info("Successfully fetched channel")
             except discord.NotFound:
                 # Channel ID is invalid or the bot can't find it
@@ -199,8 +206,10 @@ class PrinterUtils(commands.GroupCog,
                 logger.info("Reconnected to printer `%s`.", printer_name)
 
             printer = self.connected_printer_objects[printer_name]
+            if printer is None:
+                continue
             printer_current_state = await self._check_printer_status(printer= printer,
-                                                               printer_name= printer_name)
+                                                                    printer_name= printer_name)
             if printer_current_state is not None:
                 previous_state = self.previous_state_dict.get(printer_name)
                 logger.info("Current state: %s is %s", printer_name, printer_current_state)
@@ -215,7 +224,7 @@ class PrinterUtils(commands.GroupCog,
                         await embed_printer_info(
                             printer_object=printer,
                             printer_name=printer_name,
-                            set_image_callback=lambda pn=printer_name,
+                            set_image_callback=lambda pn=printer_name,# type: ignore[misc]
                             po=printer: set_image_custom_credentials_callback(
                                 printer_name=pn,
                                 printer_object=po
@@ -238,4 +247,7 @@ class PrinterUtils(commands.GroupCog,
 
 async def setup(bot):
     """Sets up the PrinterUtils cog."""
-    await bot.add_cog(PrinterUtils(bot))
+    try:
+        await bot.add_cog(PrinterUtils(bot))
+    except ValueError:
+        logger.error("CHANEL_ID environment variable not set")

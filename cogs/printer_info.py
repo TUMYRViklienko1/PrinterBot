@@ -8,14 +8,16 @@ import discord
 from discord.ext import commands
 
 import bambulabs_api as bl
-from bambulabs_api import GcodeState
+from bambulabs_api.states_info import GcodeState
 
-from .ui import (
+from .printer_utils import PrinterUtils
+
+from .ui import ( # type: ignore[attr-defined]
     MenuView,
     embed_printer_info,
 )
 
-from .utils import (
+from .utils import ( # type: ignore[attr-defined]
     MenuCallBack,
     get_printer_data,
     get_cog,
@@ -43,7 +45,7 @@ class PrinterInfo(commands.Cog):
             return False
         return True
 
-    async def _get_printer_utils_cog(self, ctx: commands.Context):
+    async def _get_printer_utils_cog(self, ctx: commands.Context[commands.Bot]):
         """Get the PrinterUtils cog."""
         cog = await get_cog(self.bot, "PrinterUtils")
         if cog is None:
@@ -51,13 +53,16 @@ class PrinterInfo(commands.Cog):
         return cog
 
     async def connection_check_callback(self,
-                                        ctx: commands.Context,
+                                        ctx: commands.Context[commands.Bot],
                                         printer_name: str,
-                                        printer_utils_cog) -> Optional[bl.Printer]:
+                                        printer_utils_cog: PrinterUtils) -> Optional[bl.Printer]:
         """Ensure a valid connection to the printer."""
 
         printer_data = await get_printer_data(printer_name=printer_name,
                                               printer_utils_cog=printer_utils_cog)
+        if printer_data is None:
+            return None
+
         printer = await printer_utils_cog.connect_to_printer(printer_name=printer_name,
                                                           printer_data=printer_data)
         if printer is not None:
@@ -66,7 +71,11 @@ class PrinterInfo(commands.Cog):
         await ctx.send(f"❌ Can't connect to a printer: '{printer_name}'")
         return None
 
-    async def status_show_callback(self,ctx: commands.Context,printer_name: str,printer_utils_cog):
+    async def status_show_callback(
+        self,
+        ctx: commands.Context[commands.Bot],
+        printer_name: str,
+        printer_utils_cog):
         """Display printer status information."""
         logger.debug("Status for printer: %s", printer_name)
 
@@ -83,9 +92,9 @@ class PrinterInfo(commands.Cog):
                 set_image_custom_credentials_callback,
                 printer_name=printer_name,
                 printer_object=printer_object
-            )
+            ) # type: ignore[assignment]
         else:
-            set_image_cb = set_image_default_credentials_callback
+            set_image_cb = set_image_default_credentials_callback # type: ignore[assignment]
 
         await embed_printer_info(
             ctx=ctx,
@@ -94,8 +103,10 @@ class PrinterInfo(commands.Cog):
             set_image_callback=set_image_cb
         )
 
-    @commands.hybrid_command(name="status", description="Display status of the printer")
-    async def status(self, ctx: commands.Context):
+    @commands.hybrid_command(# type: ignore[arg-type]
+        name="status",
+        description="Display status of the printer")
+    async def status(self, ctx: commands.Context[commands.Bot]):
         """Hybrid command to display the printer status."""
         printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
 
@@ -113,8 +124,10 @@ class PrinterInfo(commands.Cog):
             )
         )
 
-    @commands.hybrid_command(name="list", description="Display list of the printer")
-    async def list_all_printers(self, ctx: commands.Context):
+    @commands.hybrid_command(# type: ignore[arg-type]
+        name="list",
+        description="Display list of the printer")
+    async def list_all_printers(self, ctx: commands.Context[commands.Bot]):
         """Hybrid command to list all connected printers."""
         printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
 
@@ -131,9 +144,9 @@ class PrinterInfo(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="check_connection",
+    @commands.hybrid_command(name="check_connection", # type: ignore[arg-type]
                              description="Check connection of the 3D printer")
-    async def check_connection(self, ctx: commands.Context):
+    async def check_connection(self, ctx: commands.Context[commands.Bot]):
         """Hybrid command to check printer connection."""
         printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
 
