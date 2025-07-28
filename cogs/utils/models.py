@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, TypedDict
+from typing import TypedDict, cast
 import json
 import discord
 
@@ -42,14 +42,14 @@ class PrinterStorage:
         """Initialize storage with given file path."""
         self.path = Path(file_path)
 
-    def load(self) -> Dict:
+    def load(self) -> dict[str, PrinterDataDict]:
         """Load printer data from the JSON file."""
         if not self.path.exists():
             return {}
         with open(self.path, encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str,PrinterDataDict], json.load(f))
 
-    def save(self, data: Dict):
+    def save(self, data: dict[str, PrinterDataDict]) -> None:
         """Save printer data to the JSON file."""
         with open(self.path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)

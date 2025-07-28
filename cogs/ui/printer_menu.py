@@ -3,15 +3,15 @@
 import discord
 from discord.ext import commands
 
-from cogs.utils import MenuCallBack
+from cogs.utils.enums import MenuCallBack
 
 
-class Menu(discord.ui.Select):
+class Menu(discord.ui.Select):  # type: ignore[type-arg]
     """Dropdown menu for selecting a printer."""
 
     def __init__(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[commands.Bot],
         printer_utils_cog,
         parent_cog,
         callback_status: int,
@@ -66,7 +66,7 @@ class MenuView(discord.ui.View):
         self,
         printer_utils_cog,
         parent_cog,
-        ctx: commands.Context,
+        ctx: commands.Context[commands.Bot],
         callback_status: int,
     ):
         super().__init__()
