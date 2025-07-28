@@ -5,16 +5,16 @@ import datetime
 import logging
 import asyncio
 import math
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Any, Callable
 
 import bambulabs_api as bl
 
-from .models import PrinterCredentials, ImageCredentials
+from .models import PrinterCredentials, ImageCredentials, PrinterDataDict
 
 logger = logging.getLogger(__name__)
 
 
-def get_printer_data_dict(printer_data: Dict[str, str]) -> PrinterCredentials:
+def get_printer_data_dict(printer_data: PrinterDataDict) -> PrinterCredentials:
     """Converts dictionary data to a PrinterCredentials object."""
     return PrinterCredentials(
         ip=printer_data["ip"],
