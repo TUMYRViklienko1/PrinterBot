@@ -1,0 +1,64 @@
+[project]
+name = "printer-bot"
+version = "0.1.0"
+description = "Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers"
+authors = [{ name = "Vikliienko Tymur" }]
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "bambulabs_api>=2.6.1",
+    "discord.py>=2.5.2",
+    "python-dotenv>=1.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.17.1",
+    "pylint>=3.3.7",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "pytest-mock>=3.14.1",
+    "tox>=4.28.4",
+    "ruff>=0.12.8",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = false
+
+[tool.setuptools]
+package-dir = {"" = "cogs"}
+
+[tool.setuptools.packages.find]
+where = ["cogs"]
+
+[tool.setuptools.package-data]
+"utils" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+mypy_path = "cogs"
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+no_implicit_reexport = true

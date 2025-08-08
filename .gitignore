@@ -6,3 +6,23 @@ log/
 
 **/__pycache__/
 cogs/__pycache__
+
+# Python packaging
+*.egg-info/
+
+#mypy cache
+*.mypy_cache
+
+#petest_cache
+*.pytest_cache
+
+#.tox env
+*.tox
+*.coverage
+
+tree.txt
+
+build
+
+#Ruff
+.ruff_cache

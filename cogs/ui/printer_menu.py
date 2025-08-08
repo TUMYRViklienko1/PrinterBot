@@ -1,10 +1,19 @@
 import discord
 from discord.ext import commands
 
-from ..utils import MenuCallBack
+from cogs.utils.enums import MenuCallBack
 
-class Menu(discord.ui.Select):
-    def __init__(self, ctx:commands.Context, printer_utils_cog, parent_cog, callback_status: int):
+
+class Menu(discord.ui.Select):  # type: ignore[type-arg]
+    """Dropdown menu for selecting a printer."""
+
+    def __init__(
+        self,
+        ctx: commands.Context[commands.Bot],
+        printer_utils_cog,
+        parent_cog,
+        callback_status: int,
+    ):
         self.parent_cog = parent_cog
         self.ctx = ctx
         self.callback_status = callback_status
@@ -36,7 +45,15 @@ class Menu(discord.ui.Select):
             await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
 
 class MenuView(discord.ui.View):
-    def __init__(self, printer_utils_cog, parent_cog, ctx:commands.Context, callback_status: int):
+    """View containing the printer selection menu."""
+
+    def __init__(
+        self,
+        printer_utils_cog,
+        parent_cog,
+        ctx: commands.Context[commands.Bot],
+        callback_status: int,
+    ):
         super().__init__()
         self.add_item(Menu(
             ctx=ctx,
