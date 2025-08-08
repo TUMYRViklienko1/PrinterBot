@@ -1,0 +1,55 @@
+# =========================
+# Git & GitHub
+# =========================
+.git
+.gitignore
+.gitattributes
+.github/
+
+# =========================
+# Python Cache / Compiled Files
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*egg-info
+.pytest_cache
+.mypy_cache
+.tox
+*.ruff_cache
+
+# =========================
+# Development & Editor Files
+# =========================
+.vscode/
+README.md
+tree.txt
+tox.ini
+ruff.toml
+
+# =========================
+# Virtual Environments
+# =========================
+.venv/
+
+# =========================
+# Logs & Data
+# =========================
+log/
+data/
+
+# =========================
+# Tests & Dev-Only Directories
+# =========================
+tests/
+
+# =========================
+# Environment Files
+# =========================
+.env
+
+# =========================
+# Docker / Deployment
+# =========================
+deployment/
+build/

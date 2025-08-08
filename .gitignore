@@ -21,3 +21,8 @@ cogs/__pycache__
 *.coverage
 
 tree.txt
+
+build
+
+#Ruff
+.ruff_cache

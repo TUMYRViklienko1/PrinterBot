@@ -1,0 +1,24 @@
+version: "3.8"
+
+    
+services:
+  discordbot:
+    container_name: discordbot
+    image: timyrviklienko/discordbot:latest
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      -printer_data:/app/data/
+    labels:
+      org.opencontainers.image.authors: "timyrviklienko@gmail.com"
+      org.opencontainers.image.build: "docker build . -t timyrviklienko/discordbot"
+      org.opencontainers.image.source: "https://github.com/TUMYRViklienko1/PrinterBot.git"
+      org.opencontainers.image.description: "Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers."
+      org.opencontainers.image.version: "0.1.0"
+      org.opencontainers.image.title: "timyrviklienko/discordbot"
+      com.centurylinklabs.watchtower.enable: "true"
+
+    build:
+      context: ..
+      dockerfile: Dockerfile
