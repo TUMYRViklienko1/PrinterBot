@@ -13,17 +13,45 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+
+    - uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v6
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install tox-gh-actions
-    - name: Test with tox
+
+    - name: Install the project
+      run: uv sync --locked --all-extras --dev
+
+    - name: Run tests
       run: tox
 
+    - name: Build Docker image with full metadata
+      run: |
+        docker build . \
+          --label "org.opencontainers.image.authors=timyrviklienko@gmail.com" \
+          --label "org.opencontainers.image.build=docker build -t timyrviklienko/discordbot" \
+          --label "org.opencontainers.image.source=https://github.com/TUMYRViklienko1/PrinterBot.git" \
+          --label "org.opencontainers.image.description=Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers." \
+          --label "org.opencontainers.image.version=0.1.0" \
+          --label "org.opencontainers.image.title=timyrviklienko/discordbot" \
+          --label "com.centurylinklabs.watchtower.enable=true" \
+          --label "org.opencontainers.image.build_number=${{ github.run_number }}" \
+          --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --label "org.opencontainers.image.commit=${{ github.sha }}" \
+          -t ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest
+
+    - name: Push image to Docker Hub
+      run: |
+        echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
+        docker login -u ${{ secrets.DOCKER_HUB_NAME }} --password-stdin
+        docker push ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest

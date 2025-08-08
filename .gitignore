@@ -23,3 +23,6 @@ cogs/__pycache__
 tree.txt
 
 build
+
+#Ruff
+.ruff_cache

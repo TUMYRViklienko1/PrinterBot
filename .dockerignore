@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual env
+.venv/
+
+# Logs and data
+log/
+data/
+
+# Tests and development files
+tests/
+.vscode/
+README.md
+tree.txt
+requirements_dev.txt
+tox.ini
+pyproject.toml
+
+# Env file (never bake secrets into images)
+.env
+
+#Docker
+deployment
