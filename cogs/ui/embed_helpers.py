@@ -1,19 +1,20 @@
-from discord.ext import commands
-import discord
-
-import bambulabs_api as bl
+"""Helpers for building and sending printer status embeds via Discord."""
 
 import os
 import logging
-from typing import Callable, Awaitable
-from typing import Optional
+from typing import Callable, Awaitable, Optional
 
-from ..utils.printer_helpers import finish_time_format
-from ..utils.printer_helpers import printer_error_handler
+from discord.ext import commands
+import discord
+import bambulabs_api as bl
 
-from ..utils.models import ImageCredentials
+from cogs.utils.printer_helpers import finish_time_format, printer_error_handler
+from cogs.utils.models import ImageCredentials
+
+from .printer_buttons import PrinterControlView
 
 logger = logging.getLogger(__name__)
+
 
 async def embed_printer_info(
     printer_object: bl.Printer,
@@ -31,6 +32,9 @@ async def embed_printer_info(
         image_url=image_credentials.embed_set_image_url,
         ctx=ctx
     )
+
+    printer_buttons_controller = PrinterControlView(printer=printer_object,
+                                                    printer_name=printer_name)
     if status_channel is not None:
         await status_channel.send(
             file=image_credentials.image_main_location,
@@ -49,6 +53,7 @@ async def embed_printer_info(
         image_filename=image_credentials.image_filename
     )
 
+
 async def build_printer_status_embed(
     printer_object: bl.Printer,
     printer_name: str,
@@ -63,13 +68,15 @@ async def build_printer_status_embed(
         color=0x7309de
     )
 
-    if ctx  is not None:
+    if ctx is not None:
         embed.set_author(
             name=ctx.author.display_name,
             icon_url=ctx.author.display_avatar.url
         )
 
-    embed.set_thumbnail(url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg")
+    embed.set_thumbnail(
+        url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg"
+    )
 
     embed.add_field(
         name="Print Time",
@@ -117,6 +124,7 @@ async def build_printer_status_embed(
     )
 
     error_msg = await printer_error_handler(printer_object=printer_object)
+
     embed.add_field(
         name="Errors",
         value=f"`Error:` {error_msg}",
@@ -133,13 +141,17 @@ async def build_printer_status_embed(
 
     return embed
 
+
 async def delete_image(delete_image_callback: bool, image_filename: str) -> bool:
+    """Deletes the specified image file if the flag is set to True."""
+
     if delete_image_callback:
-        try: 
+        try:
             os.remove(f"img/{image_filename}")
             logger.debug("File '%s' deleted successfully.", image_filename)
             return True
-        
-        except FileNotFoundError: 
+        except FileNotFoundError:
             logger.exception("File '%s' not found.", image_filename)
             return False
+
+    return False

@@ -1,3 +1,5 @@
+"""UI components for printer selection menu."""
+
 import discord
 from discord.ext import commands
 
@@ -29,20 +31,33 @@ class Menu(discord.ui.Select):  # type: ignore[type-arg]
             min_values=1,
             max_values=1,
             options=options,
-            disabled= False
+            disabled=False,
         )
 
     async def callback(self, interaction: discord.Interaction):
+        """Handle selection callback."""
         if self.values[0] == "none":
-            await interaction.response.send_message("No printers are currently connected.", ephemeral=True)
+            await interaction.response.send_message(
+                "No printers are currently connected.",
+                ephemeral=True,
+            )
             return
-         
+
         await interaction.response.defer(ephemeral=True)
 
         if self.callback_status == MenuCallBack.CALLBACK_STATUS_SHOW:
-            await self.parent_cog.status_show_callback(self.ctx, self.values[0], self.printer_utils_cog)
+            await self.parent_cog.status_show_callback(
+                ctx=self.ctx,
+                printer_name=self.values[0],
+                printer_utils_cog=self.printer_utils_cog,
+            )
         elif self.callback_status == MenuCallBack.CALLBACK_CONNECTION_CHECK:
-            await self.parent_cog.connection_check_callback(self.ctx, self.values[0], self.printer_utils_cog)
+            await self.parent_cog.connection_check_callback(
+                ctx=self.ctx,
+                printer_name=self.values[0],
+                printer_utils_cog=self.printer_utils_cog,
+            )
+
 
 class MenuView(discord.ui.View):
     """View containing the printer selection menu."""
@@ -55,9 +70,11 @@ class MenuView(discord.ui.View):
         callback_status: int,
     ):
         super().__init__()
-        self.add_item(Menu(
-            ctx=ctx,
-            printer_utils_cog=printer_utils_cog,
-            parent_cog=parent_cog,
-            callback_status=callback_status
-        ))
+        self.add_item(
+            Menu(
+                ctx=ctx,
+                printer_utils_cog=printer_utils_cog,
+                parent_cog=parent_cog,
+                callback_status=callback_status,
+            )
+        )
