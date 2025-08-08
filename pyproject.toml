@@ -16,7 +16,6 @@ dependencies = [
     "bambulabs_api>=2.6.1",
     "discord.py>=2.5.2",
     "python-dotenv>=1.1.1",
-    "tox-gh-actions>=3.3.0",
 ]
 
 [project.optional-dependencies]

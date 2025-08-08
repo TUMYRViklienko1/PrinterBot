@@ -43,8 +43,11 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.11 tox --with tox-uv --with tox-gh
+
       - name: Run tests
-        run: tox
+        run: tox run
 
       - name: Build Docker image with full metadata
         run: |
