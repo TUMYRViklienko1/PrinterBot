@@ -1,27 +1,35 @@
-FROM python:3.11-slim-bookworm
+## ------------------------------- Builder Stage ------------------------------ ## 
+FROM python:3.11-bookworm AS builder
 
-# Prevent Python from writing .pyc files to disk
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install --no-install-recommends -y \
+        build-essential && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /usr/src/app
+# Download the latest installer, install it and then remove it
+ADD https://astral.sh/uv/install.sh /install.sh
+RUN chmod -R 655 /install.sh && /install.sh && rm /install.sh
 
-# System dependencies (minimized, merged into one layer)
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      gcc \
-      libffi-dev \
-      libpq-dev \
-      curl \
- apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV PATH="/root/.local/bin:${PATH}"
 
-# Install Python dependencies first (leverage cache)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
 
-# Now copy your app source
+COPY ./pyproject.toml .
+
+RUN uv sync
+
+## ------------------------------- Production Stage ------------------------------ ##
+FROM python:3.11-slim-bookworm AS production
+
+RUN useradd --create-home appuser
+USER appuser
+
+WORKDIR /app
+
 COPY . .
+COPY --from=builder /app/.venv .venv
 
-# Start command
-CMD ["python", "./main.py"]
+# Set up environment variables for production
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Start the application with Uvicorn in production mode, using environment variable references
+CMD ["python", "main.py"]

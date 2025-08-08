@@ -1,32 +1,55 @@
-# Git
+# =========================
+# Git & GitHub
+# =========================
 .git
 .gitignore
 .gitattributes
 .github/
 
-# Python cache
+# =========================
+# Python Cache / Compiled Files
+# =========================
 __pycache__/
 *.py[cod]
 *.pyo
+*egg-info
+.pytest_cache
+.mypy_cache
+.tox
+*.ruff_cache
 
-# Virtual env
-.venv/
-
-# Logs and data
-log/
-data/
-
-# Tests and development files
-tests/
+# =========================
+# Development & Editor Files
+# =========================
 .vscode/
 README.md
 tree.txt
-requirements_dev.txt
 tox.ini
-pyproject.toml
+ruff.toml
 
-# Env file (never bake secrets into images)
+# =========================
+# Virtual Environments
+# =========================
+.venv/
+
+# =========================
+# Logs & Data
+# =========================
+log/
+data/
+
+# =========================
+# Tests & Dev-Only Directories
+# =========================
+tests/
+
+# =========================
+# Environment Files
+# =========================
 .env
 
-#Docker
-deployment
+# =========================
+# Docker / Deployment
+# =========================
+deployment/
+build/
