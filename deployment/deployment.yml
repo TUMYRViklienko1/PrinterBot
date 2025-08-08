@@ -8,7 +8,7 @@ services:
     secrets:
       - access_token
     environment:
-      TZ: "Europe/London"
+      TZ: "Europe/Amsterdam"
       WATCHTOWER_CLEANUP: true
       WATCHTOWER_TIMEOUT: 30s
       WATCHTOWER_NOTIFICATIONS: gotify
@@ -31,11 +31,11 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      - TZ=Europe/London
+      - TZ=Europe/Amsterdam
 
   discordbot:
     container_name: discordbot
-    image: timyrviklienko/discordbot:latest
+    image: tymurvikliienko/discordbot:latest
     env_file:
       - .env
     restart: unless-stopped
@@ -43,11 +43,11 @@ services:
       - printer_data:/app/data
     labels:
       org.opencontainers.image.authors: "timyrviklienko@gmail.com"
-      org.opencontainers.image.build: "docker build -t timyrviklienko/discordbot"
+      org.opencontainers.image.build: "docker build -t tymurvikliienko/discordbot"
       org.opencontainers.image.source: "https://github.com/TUMYRViklienko1/PrinterBot.git"
       org.opencontainers.image.description: "Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers."
       org.opencontainers.image.version: "0.1.0"
-      org.opencontainers.image.title: "timyrviklienko/discordbot"
+      org.opencontainers.image.title: "tymurvikliienko/discordbot"
       com.centurylinklabs.watchtower.enable: "true"
 
     build:
