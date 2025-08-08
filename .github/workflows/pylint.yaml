@@ -1,11 +1,13 @@
-name: tests_mypy_pylint
+name: ci_cd_pipeline
 
 on:
-  push:
-    branches:
-      - dev
   pull_request:
     branches:
+      - dev
+      - main
+  push:
+    branches:
+      - main
       - dev
 
 jobs:
@@ -20,8 +22,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ------------------- PYTHON MATRIX BUILD -------------------
-  build:
+  # ------------------- TESTING -------------------
+  tests:
     needs: gitleaks
     runs-on: ubuntu-latest
     strategy:
@@ -49,11 +51,19 @@ jobs:
       - name: Run tests
         run: tox run
 
+  # ------------------- DOCKER BUILD & PUSH (ONLY MAIN) -------------------
+  docker:
+    if: github.ref == 'refs/heads/main'
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Build Docker image with full metadata
         run: |
           docker build . \
             --label "org.opencontainers.image.authors=timyrviklienko@gmail.com" \
-            --label "org.opencontainers.image.build=docker build -t timyrviklienko/discordbot" \
             --label "org.opencontainers.image.source=https://github.com/TUMYRViklienko1/PrinterBot.git" \
             --label "org.opencontainers.image.description=Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers." \
             --label "org.opencontainers.image.version=0.1.0" \
@@ -63,7 +73,6 @@ jobs:
             --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
             --label "org.opencontainers.image.commit=${{ github.sha }}" \
             -t ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest
-
       - name: Push image to Docker Hub
         run: |
           echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
