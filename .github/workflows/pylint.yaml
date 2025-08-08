@@ -9,7 +9,20 @@ on:
       - dev
 
 jobs:
+  # ------------------- GITLEAKS SECURITY SCAN -------------------
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ------------------- PYTHON MATRIX BUILD -------------------
   build:
+    needs: gitleaks
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,41 +31,38 @@ jobs:
           - "3.11"
           - "3.12"
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: gitleaks/gitleaks-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Install uv and set the python version
-      uses: astral-sh/setup-uv@v6
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
-    - name: Run tests
-      run: tox
+      - name: Run tests
+        run: tox
 
-    - name: Build Docker image with full metadata
-      run: |
-        docker build . \
-          --label "org.opencontainers.image.authors=timyrviklienko@gmail.com" \
-          --label "org.opencontainers.image.build=docker build -t timyrviklienko/discordbot" \
-          --label "org.opencontainers.image.source=https://github.com/TUMYRViklienko1/PrinterBot.git" \
-          --label "org.opencontainers.image.description=Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers." \
-          --label "org.opencontainers.image.version=0.1.0" \
-          --label "org.opencontainers.image.title=timyrviklienko/discordbot" \
-          --label "com.centurylinklabs.watchtower.enable=true" \
-          --label "org.opencontainers.image.build_number=${{ github.run_number }}" \
-          --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-          --label "org.opencontainers.image.commit=${{ github.sha }}" \
-          -t ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest
+      - name: Build Docker image with full metadata
+        run: |
+          docker build . \
+            --label "org.opencontainers.image.authors=timyrviklienko@gmail.com" \
+            --label "org.opencontainers.image.build=docker build -t timyrviklienko/discordbot" \
+            --label "org.opencontainers.image.source=https://github.com/TUMYRViklienko1/PrinterBot.git" \
+            --label "org.opencontainers.image.description=Powerful Discord assistant for monitoring and controlling your Bambu Labs 3D printers." \
+            --label "org.opencontainers.image.version=0.1.0" \
+            --label "org.opencontainers.image.title=timyrviklienko/discordbot" \
+            --label "com.centurylinklabs.watchtower.enable=true" \
+            --label "org.opencontainers.image.build_number=${{ github.run_number }}" \
+            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --label "org.opencontainers.image.commit=${{ github.sha }}" \
+            -t ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest
 
-    - name: Push image to Docker Hub
-      run: |
-        echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
-        docker login -u ${{ secrets.DOCKER_HUB_NAME }} --password-stdin
-        docker push ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest
+      - name: Push image to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
+          docker login -u ${{ secrets.DOCKER_HUB_NAME }} --password-stdin
+          docker push ${{ secrets.DOCKER_HUB_NAME }}/discordbot:latest
