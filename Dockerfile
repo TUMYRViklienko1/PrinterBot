@@ -20,9 +20,6 @@ RUN uv sync
 ## ------------------------------- Production Stage ------------------------------ ##
 FROM python:3.11-slim-bookworm AS production
 
-RUN useradd --create-home appuser
-USER appuser
-
 WORKDIR /app
 
 COPY . .
