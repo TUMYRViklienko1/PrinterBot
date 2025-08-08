@@ -586,6 +586,7 @@ dependencies = [
     { name = "bambulabs-api" },
     { name = "discord-py" },
     { name = "python-dotenv" },
+    { name = "tox-gh-actions" },
 ]
 
 [package.optional-dependencies]
@@ -598,7 +599,6 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff" },
     { name = "tox" },
-    { name = "tox-gh-actions" },
 ]
 
 [package.metadata]
@@ -614,7 +614,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.8" },
     { name = "tox", marker = "extra == 'dev'", specifier = ">=4.28.4" },
-    { name = "tox-gh-actions", marker = "extra == 'dev'", specifier = ">=3.3.0" },
+    { name = "tox-gh-actions", specifier = ">=3.3.0" },
 ]
 provides-extras = ["dev"]
 
