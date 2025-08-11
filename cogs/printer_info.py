@@ -119,11 +119,14 @@ class PrinterInfo(commands.Cog):
             logger.warning("printer is not in the list")
             return
 
-    @commands.hybrid_command(# type: ignore[arg-type]
-        name="status",
-        description="Display status of the printer")
-    async def status(self, ctx: commands.Context[commands.Bot]):
-        """Hybrid command to display the printer status."""
+    async def select_printer_menu_callback(
+        self,
+        ctx: commands.Context[commands.Bot],
+        menu_callback: MenuCallBack):
+        """
+        Determine which MenuCallBack type should be used for handling the user's menu selection
+        based on the current command context and printer utility state.
+        """
         printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
 
         if not await self.check_printer_list(ctx=ctx, printer_utils_cog=printer_utils_cog):
@@ -136,9 +139,18 @@ class PrinterInfo(commands.Cog):
                 printer_utils_cog=printer_utils_cog,
                 parent_cog=self,
                 ctx=ctx,
-                callback_status=MenuCallBack.CALLBACK_STATUS_SHOW
+                callback_status=menu_callback
             )
         )
+
+    @commands.hybrid_command(# type: ignore[arg-type]
+        name="status",
+        description="Display status of the printer")
+    async def status(self, ctx: commands.Context[commands.Bot]):
+        """Hybrid command to display the printer status."""
+        await self.select_printer_menu_callback(
+            ctx=ctx,
+            menu_callback=MenuCallBack.CALLBACK_STATUS_SHOW)
 
     @commands.hybrid_command(# type: ignore[arg-type]
         name="list",
@@ -164,41 +176,17 @@ class PrinterInfo(commands.Cog):
                              description="Check connection of the 3D printer")
     async def check_connection(self, ctx: commands.Context[commands.Bot]):
         """Hybrid command to check printer connection."""
-        printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
-
-        if not await self.check_printer_list(ctx=ctx, printer_utils_cog=printer_utils_cog):
-            logger.debug("No Printers in the list")
-            return
-
-        await ctx.send(
-            "📋 Select the printer option:",
-            view=MenuView(
-                printer_utils_cog=printer_utils_cog,
-                parent_cog=self,
-                ctx=ctx,
-                callback_status=MenuCallBack.CALLBACK_CONNECTION_CHECK
-            )
-        )
+        await self.select_printer_menu_callback(
+            ctx=ctx,
+            menu_callback=MenuCallBack.CALLBACK_CONNECTION_CHECK)
 
     @commands.hybrid_command(name="delete_printer", # type: ignore[arg-type]
                              description="Delete printer from the list")
     async def delete_printer(self, ctx: commands.Context[commands.Bot]):
         """Hybrid command to delete printer from the list."""
-        printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
-
-        if not await self.check_printer_list(ctx=ctx, printer_utils_cog=printer_utils_cog):
-            logger.debug("No Printers in the list")
-            return
-
-        await ctx.send(
-            "📋 Select the printer option:",
-            view=MenuView(
-                printer_utils_cog=printer_utils_cog,
-                parent_cog=self,
-                ctx=ctx,
-                callback_status=MenuCallBack.CALLBACK_DELETE_PRINTER
-            )
-        )
+        await self.select_printer_menu_callback(
+            ctx=ctx,
+            menu_callback=MenuCallBack.CALLBACK_DELETE_PRINTER)
 
 async def setup(bot):
     """Setup function to add this cog to the bot."""
