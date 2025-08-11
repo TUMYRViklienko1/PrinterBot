@@ -23,7 +23,6 @@ from .utils import ( # type: ignore[attr-defined]
     get_cog,
     set_image_default_credentials_callback,
     set_image_custom_credentials_callback,
-    PrinterStorage
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +118,9 @@ class PrinterInfo(commands.Cog):
             logger.warning("printer is not in the list")
             return
 
+    async def edit_printer_callback(self):
+        pass
+
     async def select_printer_menu_callback(
         self,
         ctx: commands.Context[commands.Bot],
@@ -187,6 +189,14 @@ class PrinterInfo(commands.Cog):
         await self.select_printer_menu_callback(
             ctx=ctx,
             menu_callback=MenuCallBack.CALLBACK_DELETE_PRINTER)
+
+    @commands.hybrid_command(name="edit_printer", # type: ignore[arg-type]
+                             description="Edit printer credentials")
+    async def edit_printer(self, ctx: commands.Context[commands.Bot]):
+        """Hybrid command to delete printer from the list."""
+        await self.select_printer_menu_callback(
+            ctx=ctx,
+            menu_callback=MenuCallBack.CALLBACK_EDIT_PRINTER)
 
 async def setup(bot):
     """Setup function to add this cog to the bot."""
