@@ -156,7 +156,6 @@ class PrinterUtils(commands.GroupCog,
 
         printer_data = PrinterCredentials(ip=ip, access_code=access_code, serial=serial)
         printer = await self.connect_to_printer(printer_name=name, printer_data=printer_data)
-
         if printer is not None:
             try:
                 self.connected_printers[name] = asdict(printer_data)  # type: ignore[assignment]
@@ -191,7 +190,7 @@ class PrinterUtils(commands.GroupCog,
                 logger.error("HTTP error while fetching channel %s: %s", self.status_channel_id, e)
                 return
 
-        for printer_name, printer_data in self.connected_printers.items():
+        for printer_name, printer_data in list(self.connected_printers.items()):
             printer = self.connected_printer_objects.get(printer_name)
             if printer is None or not printer.mqtt_client.is_connected():
                 logger.warning("Printer %s is disconnected. Reconnecting...", printer_name)

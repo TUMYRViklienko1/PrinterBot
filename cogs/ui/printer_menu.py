@@ -55,7 +55,13 @@ class Menu(discord.ui.Select):  # type: ignore[type-arg]
             await self.parent_cog.connection_check_callback(
                 ctx=self.ctx,
                 printer_name=self.values[0],
-                printer_utils_cog=self.printer_utils_cog,
+                printer_utils_cog=self.printer_utils_cog
+            )
+        elif self.callback_status == MenuCallBack.CALLBACK_DELETE_PRINTER:
+            await self.parent_cog.delete_printer_callback(
+                ctx=self.ctx,
+                printer_name=self.values[0],
+                printer_utils_cog=self.printer_utils_cog
             )
 
 

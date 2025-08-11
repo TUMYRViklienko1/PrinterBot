@@ -22,7 +22,8 @@ from .utils import ( # type: ignore[attr-defined]
     get_printer_data,
     get_cog,
     set_image_default_credentials_callback,
-    set_image_custom_credentials_callback
+    set_image_custom_credentials_callback,
+    PrinterStorage
 )
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ class PrinterInfo(commands.Cog):
         self,
         ctx: commands.Context[commands.Bot],
         printer_name: str,
-        printer_utils_cog):
+        printer_utils_cog: PrinterUtils):
         """Display printer status information."""
         logger.debug("Status for printer: %s", printer_name)
 
@@ -102,6 +103,21 @@ class PrinterInfo(commands.Cog):
             printer_name=printer_name,
             set_image_callback=set_image_cb
         )
+
+    async def delete_printer_callback(
+        self,
+        ctx: commands.Context[commands.Bot],
+        printer_name: str,
+        printer_utils_cog: PrinterUtils):
+        """Delete the printer from the list of all printers"""
+        logger.debug("Deleting printer: %s", printer_name)
+        try:
+            printer_utils_cog.connected_printers.pop(printer_name)
+            printer_utils_cog.storage.delete(printer_name)
+            await ctx.send(f"✅ Successfully deleted printer: {printer_name}")
+        except KeyError:
+            logger.warning("printer is not in the list")
+            return
 
     @commands.hybrid_command(# type: ignore[arg-type]
         name="status",
@@ -161,6 +177,26 @@ class PrinterInfo(commands.Cog):
                 parent_cog=self,
                 ctx=ctx,
                 callback_status=MenuCallBack.CALLBACK_CONNECTION_CHECK
+            )
+        )
+
+    @commands.hybrid_command(name="delete_printer", # type: ignore[arg-type]
+                             description="Delete printer from the list")
+    async def delete_printer(self, ctx: commands.Context[commands.Bot]):
+        """Hybrid command to delete printer from the list."""
+        printer_utils_cog = await self._get_printer_utils_cog(ctx=ctx)
+
+        if not await self.check_printer_list(ctx=ctx, printer_utils_cog=printer_utils_cog):
+            logger.debug("No Printers in the list")
+            return
+
+        await ctx.send(
+            "📋 Select the printer option:",
+            view=MenuView(
+                printer_utils_cog=printer_utils_cog,
+                parent_cog=self,
+                ctx=ctx,
+                callback_status=MenuCallBack.CALLBACK_DELETE_PRINTER
             )
         )
 
