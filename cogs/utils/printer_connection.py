@@ -21,7 +21,8 @@ from bambulabs_api.states_info import GcodeState
 from cogs.utils import (
     PrinterCredentials,
     backoff_checker,
-    light_printer_check
+    light_printer_check,
+    PrinterDataDict
 )
 
 logger = logging.getLogger(__name__)
@@ -111,3 +112,48 @@ async def connect_to_printer(
     except Exception: # pylint: disable=broad-exception-caught
         logger.exception("Unhandled exception during connect")
         return None
+
+async def connection_check(
+    printer_name: str,
+    printer_utils_cog: 'PrinterUtils') -> Optional[bl.Printer]:
+    """Check the connection to the existing printer"""
+    try:
+        printer_data_dict = printer_utils_cog.connected_printers[printer_name]
+        printer_data_credentials = PrinterCredentials(**printer_data_dict)
+        printer = await connect_to_printer(
+            printer_name=printer_name,
+            printer_data=printer_data_credentials
+            )
+        if printer is not None:
+            return printer
+        logger.warning("Can't reach the printer: '%s'", printer_name)
+        return None
+    except KeyError:
+        return None
+
+async def connect_new_printer(
+    printer_name:str,
+    printer_data:PrinterDataDict):
+    """
+    Attempts to establish a connection to a new printer using the provided credentials.
+
+    This function wraps `connect_to_printer` and logs a warning if the connection fails.
+    If the printer connects successfully, the printer instance is returned for further use.
+
+    Args:
+        printer_name (str): The human-readable name assigned to the printer.
+        printer_data (PrinterDataDict): Dictionary containing printer connection parameters
+            such as IP address, access code, and serial number.
+
+    Returns:
+        bl.Printer | None: The connected printer instance if successful, otherwise None.
+    """
+    printer = await connect_to_printer(
+        printer_name=printer_name,
+        printer_data=printer_data
+    )
+
+    if printer is not None:
+        return printer
+    logger.warning("Can't connect to the printer: '%s'", printer_name)
+    return None

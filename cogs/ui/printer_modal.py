@@ -10,8 +10,6 @@ import discord
 from cogs.utils import PrinterCredentials
 from cogs.utils import delete_printer
 
-from cogs.utils import printer_connect_general
-
 if TYPE_CHECKING:
     from cogs.printer_utils import PrinterUtils
 

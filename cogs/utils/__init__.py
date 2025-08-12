@@ -13,8 +13,7 @@ from .printer_helpers import (
     set_image_default_credentials_callback,
     get_printer_data_dict,
     backoff_checker,
-    delete_printer,
-    connection_check
+    delete_printer
 )
 
 from .models import (
@@ -30,5 +29,6 @@ from .printer_connection import (
     _connect_mqtt,
     _check_printer_status,
     wait_for_printer_ready,
-    connect_to_printer
+    connect_to_printer,
+    connection_check
 )

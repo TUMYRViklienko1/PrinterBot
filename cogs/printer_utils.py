@@ -3,7 +3,6 @@
 
 import asyncio
 import logging
-import ipaddress
 import os
 from dataclasses import asdict
 from typing import Dict, Optional
