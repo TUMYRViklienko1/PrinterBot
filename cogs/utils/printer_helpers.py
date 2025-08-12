@@ -153,10 +153,10 @@ def delete_printer(
         logger.warning("printer is not in the list")
         return False
 
-async def printer_connect_general(
+async def connection_check(
     printer_name: str,
-    printer_utils_cog: 'PrinterUtils'):
-    """General function for the connection to printer"""
+    printer_utils_cog: 'PrinterUtils') -> Optional[bl.Printer]:
+    """Check the connection to the existing printer"""
     try:
         printer_data = printer_utils_cog.connected_printers[printer_name]
         printer = await printer_utils_cog.connect_to_printer(
@@ -169,3 +169,17 @@ async def printer_connect_general(
         return None
     except KeyError:
         return None
+
+# async def connect_new_printer(
+#     printer_name:str,
+#     printer_data:PrinterDataDict):
+#     printer = await self.printer_utils_cog.connect_to_printer(
+#         printer_name=self.printer_name_original,
+#         printer_data=new_printer_credentials
+#     )
+
+#     if printer is not None:
+#         return printer
+#     logger.warning("Can't connect to a printer: '%s'", printer_name)
+#     return None
+

@@ -14,7 +14,7 @@ from .printer_helpers import (
     get_printer_data_dict,
     backoff_checker,
     delete_printer,
-    printer_connect_general
+    connection_check
 )
 
 from .models import (

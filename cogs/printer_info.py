@@ -24,7 +24,8 @@ from .utils import ( # type: ignore[attr-defined]
     get_cog,
     set_image_default_credentials_callback,
     set_image_custom_credentials_callback,
-    delete_printer
+    delete_printer,
+    connection_check
 )
 
 logger = logging.getLogger(__name__)
@@ -68,9 +69,9 @@ class PrinterInfo(commands.Cog):
         if printer_data is None:
             return None
 
-        printer = await printer_utils_cog.connect_to_printer(
+        printer = await connection_check(
             printer_name=printer_name,
-            printer_data=printer_data
+            printer_utils_cog=printer_utils_cog
             )
 
         if printer is not None:
@@ -121,7 +122,7 @@ class PrinterInfo(commands.Cog):
             printer_name=printer_name,
             printer_utils_cog=printer_utils_cog):
             await ctx.send(f"✅ Successfully deleted printer: {printer_name}")
-        return        
+        return
 
     async def edit_printer_callback(
         self,

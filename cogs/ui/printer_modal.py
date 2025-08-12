@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from ..utils import PrinterCredentials
-from ..utils import delete_printer
+from cogs.utils import PrinterCredentials
+from cogs.utils import delete_printer
+
+from cogs.utils import printer_connect_general
 
 if TYPE_CHECKING:
     from cogs.printer_utils import PrinterUtils
@@ -101,6 +103,7 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
                     ephemeral=True
                 )
                 return
+
 
             delete_printer(
                 printer_name=self.printer_name_original,
