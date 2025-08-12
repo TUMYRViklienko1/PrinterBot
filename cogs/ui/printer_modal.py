@@ -2,15 +2,17 @@
 
 from dataclasses import asdict
 import traceback
+import re
 
 from typing import TYPE_CHECKING
 
 import discord
 
-from cogs.utils import PrinterCredentials
-from cogs.utils import delete_printer
-
-from cogs.utils import printer_connect_general
+from cogs.utils import (
+    PrinterCredentials,
+    delete_printer,
+    connect_new_printer
+)
 
 if TYPE_CHECKING:
     from cogs.printer_utils import PrinterUtils
@@ -39,6 +41,7 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
         super().__init__()
         self.printer_name_original = printer_name
         self.printer_utils_cog = printer_utils_cog
+        self.new_printer_name = ""
         printer_credentials = printer_utils_cog.connected_printers[printer_name]
 
         # Initialize input fields with existing printer data
@@ -47,12 +50,14 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             style=discord.TextStyle.short,
             default=printer_name,
             placeholder="Enter new printer name",
+            min_length=1,
+            max_length=30
         )
         self.field_ip = discord.ui.TextInput(
             label="Printer IP",
             style=discord.TextStyle.short,
             default=printer_credentials["ip"],
-            placeholder="Enter new IP address"
+            placeholder="Enter new IP address",
         )
         self.field_access_code = discord.ui.TextInput(
             label="Printer Access Code",
@@ -72,6 +77,21 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
         self.add_item(self.field_access_code)
         self.add_item(self.field_serial)
 
+    def normalize_raw_data(self):
+        """Normalize and lowercase printer name; strip whitespace from all text input values."""
+        strip_printer_name = (self.field_name.value or "").strip()
+        self.new_printer_name = strip_printer_name.lower()
+
+    def name_duplicate_check(self) -> bool:
+        """Check for duplicates (case-insensitive) unless it's the same printer"""
+        if self.new_printer_name == self.printer_name_original:
+            return True
+
+        existing_names = (name.lower() for name in self.printer_utils_cog.connected_printers.keys())
+        if self.new_printer_name in existing_names:
+            return False
+
+        return True
     # pylint: disable=arguments-differ
     async def on_submit(self, interaction: discord.Interaction):
         """
@@ -84,6 +104,21 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
 
         await interaction.response.defer(ephemeral=True)
 
+        self.normalize_raw_data()
+        if not re.match(r'^[\w\s-]+$', self.new_printer_name):
+            await interaction.followup.send(
+            "❌ Printer name contains invalid characters."
+            "Only letters, numbers, spaces, underscores, and hyphens are allowed.",
+            ephemeral=True
+            )
+            return
+        if self.name_duplicate_check() is False:
+            await interaction.followup.send(
+                "❌ Printer name already exists."
+                "Please submit the edit again with a different name.",
+                ephemeral=True
+            )
+            return
         try:
             new_printer_credentials = PrinterCredentials(
                 self.field_ip.value.strip(),
@@ -91,19 +126,15 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
                 self.field_serial.value.strip()
             )
 
-            printer = await self.printer_utils_cog.connect_to_printer(
-                printer_name=self.printer_name_original,
-                printer_data=new_printer_credentials
-            )
-
-            if printer is None:
+            if await connect_new_printer(
+                printer_name=self.new_printer_name,
+                printer_data=new_printer_credentials) is None:
                 await interaction.followup.send(
-                    f"❌ Can't connect to the printer: {self.field_name.value.strip()}, "
+                    f"❌ Can't connect to the printer: {self.new_printer_name.strip()}, "
                     "please check credentials",
                     ephemeral=True
                 )
                 return
-
 
             delete_printer(
                 printer_name=self.printer_name_original,
@@ -111,12 +142,12 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             )
 
             connected_printers = self.printer_utils_cog.storage.load()
-            connected_printers[self.field_name.value.strip()] = asdict(new_printer_credentials)
+            connected_printers[self.new_printer_name.strip()] = asdict(new_printer_credentials)
             self.printer_utils_cog.storage.save(connected_printers)
             self.printer_utils_cog.connected_printers = connected_printers
 
             await interaction.followup.send(
-                f'✅ Successfully edited printer credentials: {self.field_name.value.strip()}!',
+                f'✅ Successfully edited printer credentials: {self.new_printer_name.strip()}!',
                 ephemeral=True
             )
 
