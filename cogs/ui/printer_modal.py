@@ -78,12 +78,9 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
         self.add_item(self.field_serial)
 
     def normalize_raw_data(self):
-        """Strip whitespace from all text input values."""
-        strip_printer_name = self.field_name.value.strip()
-        self.new_printer_name=strip_printer_name.lower()
-        self.field_ip.value=self.field_ip.value.strip()
-        self.field_access_code.value=self.field_access_code.value.strip()
-        self.field_serial.value=self.field_serial.value.strip()
+        """Normalize and lowercase printer name; strip whitespace from all text input values."""
+        strip_printer_name = (self.field_name.value or "").strip()
+        self.new_printer_name = strip_printer_name.lower()
 
     def name_duplicate_check(self) -> bool:
         """Check for duplicates (case-insensitive) unless it's the same printer"""
@@ -124,12 +121,12 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             return
         try:
             new_printer_credentials = PrinterCredentials(
-                self.field_ip.value,
-                self.field_access_code.value,
-                self.field_serial.value
+                self.field_ip.value.strip(),
+                self.field_access_code.value.strip(),
+                self.field_serial.value.strip()
             )
 
-            if connect_new_printer(
+            if await connect_new_printer(
                 printer_name=self.new_printer_name,
                 printer_data=new_printer_credentials) is None:
                 await interaction.followup.send(
