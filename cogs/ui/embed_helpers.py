@@ -75,7 +75,7 @@ async def build_printer_status_embed(
         )
 
     embed.set_thumbnail(
-        url="https://i.pinimg.com/736x/42/40/ce/4240ce1dbd35a77bea5138b9e1a5a9f7.jpg"
+        url="attachment://img/embed_thumbnail.jpg"
     )
 
     embed.add_field(

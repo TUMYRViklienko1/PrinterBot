@@ -1,4 +1,5 @@
 """Data models and utilities for printer and image credentials."""
+import logging
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,6 +7,7 @@ from typing import TypedDict, cast
 import json
 import discord
 
+logger = logging.getLogger(__name__)
 
 @dataclass(init=True, repr=False, eq=False)
 class PrinterCredentials:
@@ -53,3 +55,11 @@ class PrinterStorage:
         """Save printer data to the JSON file."""
         with open(self.path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
+
+    def delete(self, printer_name_remove:str):
+        """Remove printer from the JSON file"""
+        connected_printers = self.load()
+
+        if printer_name_remove in connected_printers:
+            connected_printers.pop(printer_name_remove)
+            self.save(connected_printers)

@@ -6,7 +6,11 @@ import os
 
 import discord
 from discord.ext import commands
-# from .config import DISCORD_TOKEN
+
+from cogs.utils import (
+    setup_global_check,
+    setup_global_error_handler
+)
 
 from config import DISCORD_TOKEN
 
@@ -18,12 +22,15 @@ logger = logging.getLogger(__name__)
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+setup_global_check(bot)
+setup_global_error_handler(bot)
+
 @bot.event
 async def on_ready():
     """Called when bot connects."""
     await bot.change_presence(
-        status=discord.Status.do_not_disturb,
-        activity=discord.Activity(type=discord.ActivityType.listening, name='test')
+        status=discord.Status.online,
+        activity=discord.Activity(type=discord.ActivityType.watching, name='printers status')
     )
     logger.info("Bot is ready!")
 

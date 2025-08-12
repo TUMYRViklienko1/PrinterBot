@@ -6,7 +6,7 @@ import datetime
 import logging
 import asyncio
 import math
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, TYPE_CHECKING
 
 import bambulabs_api as bl
 
@@ -14,6 +14,8 @@ from .models import PrinterCredentials, ImageCredentials, PrinterDataDict
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from cogs.printer_utils import PrinterUtils
 
 def get_printer_data_dict(printer_data: PrinterDataDict) -> PrinterCredentials:
     """Converts dictionary data to a PrinterCredentials object."""
@@ -137,3 +139,16 @@ async def backoff_checker(
 
     logger.error("Could not perform %s after %d attempts.", action_name, max_attempts)
     return None
+
+def delete_printer(
+    printer_name: str,
+    printer_utils_cog) -> bool:
+    """Delete the printer from the list of all printers"""
+    logger.debug("Deleting printer: %s", printer_name)
+    try:
+        printer_utils_cog.connected_printers.pop(printer_name)
+        printer_utils_cog.storage.delete(printer_name)
+        return True
+    except KeyError:
+        logger.warning("printer is not in the list")
+        return False

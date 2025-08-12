@@ -3,7 +3,6 @@
 
 import asyncio
 import logging
-import ipaddress
 import os
 from dataclasses import asdict
 from typing import Dict, Optional
@@ -18,11 +17,12 @@ from .ui.embed_helpers import embed_printer_info
 from .utils import ( # type: ignore[attr-defined]
     PrinterCredentials,
     PrinterStorage,
-    light_printer_check,
     set_image_custom_credentials_callback,
     get_printer_data_dict,
-    backoff_checker,
     PrinterDataDict,
+    _validate_ip,
+    _check_printer_status,
+    connect_to_printer
 )
 logger = logging.getLogger(__name__)
 CHANEL_ID = os.getenv("CHANEL_ID")
@@ -49,93 +49,6 @@ class PrinterUtils(commands.GroupCog,
         self.status_channel: Optional[discord.TextChannel] = None
         self.monitor_printers.start()
 
-    async def _validate_ip(self, ip: str) -> bool:
-        """Validates the IP address format."""
-        try:
-            ipaddress.ip_address(ip)
-        except ValueError:
-            logger.error("Invalid IP address: %s", ip)
-            return False
-        return True
-
-    def _create_printer(self, printer_data: PrinterCredentials) -> bl.Printer:
-        """Creates and connects a printer instance."""
-        printer = bl.Printer(printer_data.ip, printer_data.access_code, printer_data.serial)
-        printer.connect()
-        return printer
-
-    async def _connect_mqtt(self, printer: bl.Printer, printer_name: str) -> bool:
-        """Establishes MQTT connection using backoff strategy."""
-        action_name = f"MQTT connection to {printer_name}"
-        result = await backoff_checker(
-            action_func_callback=printer.mqtt_client.is_connected,
-            action_name=action_name,
-            interval=0.3,
-            max_attempts=5,
-            success_condition=lambda connected: connected is True
-        )
-        return result is True
-
-    async def _check_printer_status(self, printer: bl.Printer, printer_name: str) -> Optional[str]:
-        """Checks if printer returns valid status."""
-        return await backoff_checker(
-            action_func_callback=printer.get_state,
-            action_name=f"check_printer_status for {printer_name}",
-            interval=0.3,
-            max_attempts=10,
-            success_condition=lambda state: state != GcodeState.UNKNOWN
-        )
-
-    async def wait_for_printer_ready(self, printer: bl.Printer, timeout: float = 5.0) -> bool:
-        """Waits for the printer to be ready after MQTT handshake."""
-        end_time = asyncio.get_event_loop().time() + timeout
-        while asyncio.get_event_loop().time() < end_time:
-            if (printer.get_state() != GcodeState.UNKNOWN and
-                printer.get_bed_temperature() is not None):
-                return True
-            await asyncio.sleep(0.5)
-        logger.error("Printer Values Not Available Yet")
-        return False
-    # pylint: disable=too-many-return-statements
-    async def connect_to_printer(
-        self,
-        printer_name: str,
-        printer_data: PrinterCredentials
-    ) -> Optional[bl.Printer]:
-        """Connects to a printer and validates its state."""
-        try:
-            printer = self._create_printer(printer_data=printer_data)
-            if not await self._connect_mqtt(printer=printer, printer_name=printer_name):
-                logger.error("Could not connect to `%s` via MQTT.", printer_name)
-                return None
-
-            status = await self._check_printer_status(
-                printer=printer,
-                printer_name=printer_name
-            )
-
-            if status is None:
-                logger.warning("Connected to `%s`, but status is UNKNOWN.", printer_name)
-                return None
-
-            if not await self.wait_for_printer_ready(printer):
-                logger.error("Printer values never became available")
-                return None
-
-            logger.info("Connected to `%s` with status `%s`.", printer_name, status)
-
-            if not await light_printer_check(printer=printer):
-                logger.error("Return None in the light_printer_check")
-                return None
-
-            return printer
-        except (ConnectionError, TimeoutError) as e:
-            logger.error("Connection issue while connecting to printer `%s`: %s", printer_name, e)
-            return None
-        except Exception: # pylint: disable=broad-exception-caught
-            logger.exception("Unhandled exception during connect")
-            return None
-
     @commands.hybrid_command(  # type: ignore[arg-type]
         name="connect",
         description="Connect to a 3D Printer")
@@ -148,21 +61,22 @@ class PrinterUtils(commands.GroupCog,
         """Discord command to connect to a printer."""
         await ctx.defer(ephemeral=True)
 
-        if not await self._validate_ip(ip):
+        if not await _validate_ip(ip):
             logger.error("Invalid IP address: `%s`.", ip)
             return
 
         logger.info("Attempting connection to printer: `%s`", name)
 
         printer_data = PrinterCredentials(ip=ip, access_code=access_code, serial=serial)
-        printer = await self.connect_to_printer(printer_name=name, printer_data=printer_data)
-
+        printer = await connect_to_printer(printer_name=name, printer_data=printer_data)
         if printer is not None:
             try:
                 self.connected_printers[name] = asdict(printer_data)  # type: ignore[assignment]
                 self.storage.save(self.connected_printers)
             finally:
                 await asyncio.to_thread(printer.disconnect)
+        await ctx.send(f"❌ Can't connect to the printer: {name}")
+        return
     # pylint: disable=too-many-branches
     @tasks.loop(seconds=15)
     async def monitor_printers(self):
@@ -191,11 +105,11 @@ class PrinterUtils(commands.GroupCog,
                 logger.error("HTTP error while fetching channel %s: %s", self.status_channel_id, e)
                 return
 
-        for printer_name, printer_data in self.connected_printers.items():
+        for printer_name, printer_data in list(self.connected_printers.items()):
             printer = self.connected_printer_objects.get(printer_name)
             if printer is None or not printer.mqtt_client.is_connected():
                 logger.warning("Printer %s is disconnected. Reconnecting...", printer_name)
-                printer_object = await self.connect_to_printer(
+                printer_object = await connect_to_printer(
                     printer_name=printer_name,
                     printer_data=get_printer_data_dict(printer_data=printer_data)
                 )
@@ -208,8 +122,10 @@ class PrinterUtils(commands.GroupCog,
             printer = self.connected_printer_objects[printer_name]
             if printer is None:
                 continue
-            printer_current_state = await self._check_printer_status(printer= printer,
-                                                                    printer_name= printer_name)
+            printer_current_state = await _check_printer_status(
+                printer= printer,
+                printer_name= printer_name
+                )
             if printer_current_state is not None:
                 previous_state = self.previous_state_dict.get(printer_name)
                 logger.info("Current state: %s is %s", printer_name, printer_current_state)

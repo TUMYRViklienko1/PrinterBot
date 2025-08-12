@@ -43,21 +43,32 @@ class Menu(discord.ui.Select):  # type: ignore[type-arg]
             )
             return
 
-        await interaction.response.defer(ephemeral=True)
-
         if self.callback_status == MenuCallBack.CALLBACK_STATUS_SHOW:
+            await interaction.response.defer(ephemeral=True)
             await self.parent_cog.status_show_callback(
                 ctx=self.ctx,
                 printer_name=self.values[0],
                 printer_utils_cog=self.printer_utils_cog,
             )
         elif self.callback_status == MenuCallBack.CALLBACK_CONNECTION_CHECK:
+            await interaction.response.defer(ephemeral=True)
             await self.parent_cog.connection_check_callback(
                 ctx=self.ctx,
                 printer_name=self.values[0],
-                printer_utils_cog=self.printer_utils_cog,
+                printer_utils_cog=self.printer_utils_cog
             )
-
+        elif self.callback_status == MenuCallBack.CALLBACK_DELETE_PRINTER:
+            await self.parent_cog.delete_printer_callback(
+                ctx=self.ctx,
+                printer_name=self.values[0],
+                printer_utils_cog=self.printer_utils_cog
+            )
+        elif self.callback_status == MenuCallBack.CALLBACK_EDIT_PRINTER:
+            await self.parent_cog.edit_printer_callback(
+                interaction = interaction,
+                printer_name=self.values[0],
+                printer_utils_cog=self.printer_utils_cog
+            )
 
 class MenuView(discord.ui.View):
     """View containing the printer selection menu."""
