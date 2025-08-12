@@ -75,6 +75,8 @@ class PrinterUtils(commands.GroupCog,
                 self.storage.save(self.connected_printers)
             finally:
                 await asyncio.to_thread(printer.disconnect)
+        await ctx.send(f"❌ Can't connect to the printer: {name}")
+        return
     # pylint: disable=too-many-branches
     @tasks.loop(seconds=15)
     async def monitor_printers(self):
