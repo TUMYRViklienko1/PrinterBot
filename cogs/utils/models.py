@@ -1,11 +1,11 @@
 """Data models and utilities for printer and image credentials."""
+import logging
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict, cast
 import json
 import discord
-import logging
 
 logger = logging.getLogger(__name__)
 

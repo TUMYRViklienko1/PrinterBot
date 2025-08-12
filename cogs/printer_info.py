@@ -15,6 +15,7 @@ from .printer_utils import PrinterUtils
 from .ui import ( # type: ignore[attr-defined]
     MenuView,
     embed_printer_info,
+    PrinterEditModal
 )
 
 from .utils import ( # type: ignore[attr-defined]
@@ -23,6 +24,7 @@ from .utils import ( # type: ignore[attr-defined]
     get_cog,
     set_image_default_credentials_callback,
     set_image_custom_credentials_callback,
+    delete_printer
 )
 
 logger = logging.getLogger(__name__)
@@ -58,13 +60,19 @@ class PrinterInfo(commands.Cog):
                                         printer_utils_cog: PrinterUtils) -> Optional[bl.Printer]:
         """Ensure a valid connection to the printer."""
 
-        printer_data = await get_printer_data(printer_name=printer_name,
-                                              printer_utils_cog=printer_utils_cog)
+        printer_data = await get_printer_data(
+            printer_name=printer_name,
+            printer_utils_cog=printer_utils_cog
+            )
+
         if printer_data is None:
             return None
 
-        printer = await printer_utils_cog.connect_to_printer(printer_name=printer_name,
-                                                          printer_data=printer_data)
+        printer = await printer_utils_cog.connect_to_printer(
+            printer_name=printer_name,
+            printer_data=printer_data
+            )
+
         if printer is not None:
             await ctx.send(f"Successfully connected to the printer: '{printer_name}'")
             return printer
@@ -108,18 +116,24 @@ class PrinterInfo(commands.Cog):
         ctx: commands.Context[commands.Bot],
         printer_name: str,
         printer_utils_cog: PrinterUtils):
-        """Delete the printer from the list of all printers"""
-        logger.debug("Deleting printer: %s", printer_name)
-        try:
-            printer_utils_cog.connected_printers.pop(printer_name)
-            printer_utils_cog.storage.delete(printer_name)
+        """Callback to delete printer from the list of all printers"""
+        if delete_printer(
+            printer_name=printer_name,
+            printer_utils_cog=printer_utils_cog):
             await ctx.send(f"✅ Successfully deleted printer: {printer_name}")
-        except KeyError:
-            logger.warning("printer is not in the list")
-            return
+        return        
 
-    async def edit_printer_callback(self):
-        pass
+    async def edit_printer_callback(
+        self,
+        interaction: discord.Interaction,
+        printer_name: str,
+        printer_utils_cog: PrinterUtils):
+        """Edit the printer credentials"""
+        print_edit_modal = PrinterEditModal(
+            printer_name=printer_name,
+            printer_utils_cog=printer_utils_cog
+            )
+        await interaction.response.send_modal(print_edit_modal)
 
     async def select_printer_menu_callback(
         self,

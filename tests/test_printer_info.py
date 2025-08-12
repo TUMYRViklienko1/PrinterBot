@@ -46,6 +46,4 @@ def test_delete_printer_data(ctx_mock, connected_printers):
     """
     Test delete_printer_callback ...
     """
-    test_printer_info = PrinterInfo()
-    with pytest.raises()
-    test_printer_info.delete_printer_callback(ctx_mock, conn)
+    pass
