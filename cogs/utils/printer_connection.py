@@ -133,7 +133,7 @@ async def connection_check(
 
 async def connect_new_printer(
     printer_name:str,
-    printer_data:PrinterDataDict):
+    printer_data:PrinterDataDict) -> Optional[bl.Printer]:
     """
     Attempts to establish a connection to a new printer using the provided credentials.
 

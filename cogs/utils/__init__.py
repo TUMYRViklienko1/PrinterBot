@@ -30,5 +30,6 @@ from .printer_connection import (
     _check_printer_status,
     wait_for_printer_ready,
     connect_to_printer,
-    connection_check
+    connection_check,
+    connect_new_printer
 )
