@@ -1,18 +1,16 @@
 """add docstring ..."""
 
-from dataclasses import asdict
 import traceback
 import re
 
 from typing import TYPE_CHECKING
 
 import discord
+from discord.ui import TextInput
 
-from cogs.utils import (
-    PrinterCredentials,
-    delete_printer,
-    connect_new_printer
-)
+from cogs.utils.models import PrinterCredentials
+from cogs.utils.printer_helpers import delete_printer
+from cogs.utils.printer_connection import connect_new_printer
 
 if TYPE_CHECKING:
     from cogs.printer_utils import PrinterUtils
@@ -38,14 +36,18 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             printer_name (str): The name of the printer to edit.
             printer_utils_cog (PrinterUtils): The cog managing printer utilities.
         """
+        self.field_name: TextInput[PrinterEditModal]
+        self.field_ip: TextInput[PrinterEditModal]
+        self.field_access_code: TextInput[PrinterEditModal]
+        self.field_serial: TextInput[PrinterEditModal]
+
         super().__init__()
         self.printer_name_original = printer_name
         self.printer_utils_cog = printer_utils_cog
         self.new_printer_name = ""
         printer_credentials = printer_utils_cog.connected_printers[printer_name]
 
-        # Initialize input fields with existing printer data
-        self.field_name = discord.ui.TextInput(
+        self.field_name = TextInput(
             label="Printer Name",
             style=discord.TextStyle.short,
             default=printer_name,
@@ -53,19 +55,19 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             min_length=1,
             max_length=30
         )
-        self.field_ip = discord.ui.TextInput(
+        self.field_ip = TextInput(
             label="Printer IP",
             style=discord.TextStyle.short,
             default=printer_credentials["ip"],
             placeholder="Enter new IP address",
         )
-        self.field_access_code = discord.ui.TextInput(
+        self.field_access_code = TextInput(
             label="Printer Access Code",
             style=discord.TextStyle.short,
             default=printer_credentials["access_code"],
             placeholder="Enter new access code"
         )
-        self.field_serial = discord.ui.TextInput(
+        self.field_serial = TextInput(
             label="Printer Serial",
             style=discord.TextStyle.short,
             default=printer_credentials["serial"],
@@ -101,7 +103,6 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
         If the connection to the printer fails, informs the user of the failure.
         Otherwise, updates the stored printer data and confirms success.
         """
-
         await interaction.response.defer(ephemeral=True)
 
         self.normalize_raw_data()
@@ -142,7 +143,11 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             )
 
             connected_printers = self.printer_utils_cog.storage.load()
-            connected_printers[self.new_printer_name.strip()] = asdict(new_printer_credentials)
+            connected_printers[self.new_printer_name.strip()] = {
+                "ip": self.field_ip.value.strip(),
+                "access_code": self.field_access_code.value.strip(),
+                "serial": self.field_serial.value.strip(),
+            }
             self.printer_utils_cog.storage.save(connected_printers)
             self.printer_utils_cog.connected_printers = connected_printers
 
@@ -156,7 +161,11 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             traceback.print_exception(type(error), error, error.__traceback__)
 
     # pylint: disable=arguments-differ
-    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+    async def on_error(  # type: ignore[override]
+        self,
+        interaction: discord.Interaction,
+        error: Exception
+        ) -> None:
         """
         Handle any errors raised during modal submission.
 

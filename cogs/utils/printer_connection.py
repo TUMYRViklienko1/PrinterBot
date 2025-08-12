@@ -18,12 +18,9 @@ from typing import Optional
 import bambulabs_api as bl
 from bambulabs_api.states_info import GcodeState
 
-from cogs.utils import (
-    PrinterCredentials,
-    backoff_checker,
-    light_printer_check,
-    PrinterDataDict
-)
+from cogs.utils.models import PrinterCredentials
+from cogs.utils.printer_helpers import backoff_checker
+from cogs.utils.printer_helpers import light_printer_check
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +112,7 @@ async def connect_to_printer(
 
 async def connection_check(
     printer_name: str,
-    printer_utils_cog: 'PrinterUtils') -> Optional[bl.Printer]:
+    printer_utils_cog: 'PrinterUtils') -> Optional[bl.Printer]: # type: ignore[name-defined]
     """Check the connection to the existing printer"""
     try:
         printer_data_dict = printer_utils_cog.connected_printers[printer_name]
@@ -133,7 +130,7 @@ async def connection_check(
 
 async def connect_new_printer(
     printer_name:str,
-    printer_data:PrinterDataDict) -> Optional[bl.Printer]:
+    printer_data:PrinterCredentials) -> Optional[bl.Printer]:
     """
     Attempts to establish a connection to a new printer using the provided credentials.
 
