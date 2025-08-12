@@ -2,6 +2,11 @@
 
 from .enums import MenuCallBack
 
+from .admin import (
+    setup_global_check,
+    setup_global_error_handler
+)
+
 from .printer_helpers import (
     get_printer_data,
     printer_error_handler,
