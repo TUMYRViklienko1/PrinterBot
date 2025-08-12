@@ -7,3 +7,5 @@ from .embed_helpers import build_printer_status_embed
 from .embed_helpers import delete_image
 
 from .printer_buttons import PrinterControlView
+
+from .printer_modal import PrinterEditModal
