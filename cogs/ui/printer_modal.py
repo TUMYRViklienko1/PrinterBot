@@ -44,7 +44,7 @@ class PrinterEditModal(discord.ui.Modal, title="printer_edit_modal"):
             label="Printer Name",
             style=discord.TextStyle.short,
             default=printer_name,
-            placeholder="Enter new printer name"
+            placeholder="Enter new printer name",
         )
         self.field_ip = discord.ui.TextInput(
             label="Printer IP",

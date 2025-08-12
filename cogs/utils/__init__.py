@@ -13,7 +13,8 @@ from .printer_helpers import (
     set_image_default_credentials_callback,
     get_printer_data_dict,
     backoff_checker,
-    delete_printer
+    delete_printer,
+    printer_connect_general
 )
 
 from .models import (

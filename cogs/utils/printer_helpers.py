@@ -6,7 +6,7 @@ import datetime
 import logging
 import asyncio
 import math
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, TYPE_CHECKING
 
 import bambulabs_api as bl
 
@@ -14,6 +14,8 @@ from .models import PrinterCredentials, ImageCredentials, PrinterDataDict
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from cogs.printer_utils import PrinterUtils
 
 def get_printer_data_dict(printer_data: PrinterDataDict) -> PrinterCredentials:
     """Converts dictionary data to a PrinterCredentials object."""
@@ -150,3 +152,20 @@ def delete_printer(
     except KeyError:
         logger.warning("printer is not in the list")
         return False
+
+async def printer_connect_general(
+    printer_name: str,
+    printer_utils_cog: 'PrinterUtils'):
+    """General function for the connection to printer"""
+    try:
+        printer_data = printer_utils_cog.connected_printers[printer_name]
+        printer = await printer_utils_cog.connect_to_printer(
+            printer_name=printer_name,
+            printer_data=printer_data
+            )
+        if printer is not None:
+            return printer
+        logger.warning("Can't connect to a printer: '%s'", printer_name)
+        return None
+    except KeyError:
+        return None
